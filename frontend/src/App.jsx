@@ -5,7 +5,7 @@ import viteLogo from './assets/vite.svg';
 import './App.css';
 
 
-// This is for testing only
+// コミットのテスト用です
 function App() {
     const [count, setCount] = useState(0);
 
