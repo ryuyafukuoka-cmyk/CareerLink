@@ -1,0 +1,25 @@
+{
+    "name": "careerlink",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "tree": "tree -L 4 -I \"node_modules\""
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ryuyafukuoka-cmyk/CareerLink.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "commonjs",
+    "bugs": {
+        "url": "https://github.com/ryuyafukuoka-cmyk/CareerLink/issues"
+    },
+    "homepage": "https://github.com/ryuyafukuoka-cmyk/CareerLink#readme",
+    "devDependencies": {
+        "tree-node-cli": "^3.0.0"
+    }
+}
