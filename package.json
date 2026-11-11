@@ -2,7 +2,6 @@
     "name": "careerlink",
     "version": "1.0.0",
     "description": "",
-    "main": "index.js",
     "scripts": {
         "dev": "concurrently -n front,back -c cyan,yellow \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\"",
         "format": "prettier --write .",
