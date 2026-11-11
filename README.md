@@ -1,16 +1,18 @@
-# React + Vite
+## 初回セットアップ
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+```bash
+npm install
+npm install --prefix frontend
+npm install --prefix backend
+```
 
-Currently, two official plugins are available:
+## ルートで使えるコマンド
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+| コマンド               | 内容                                                                          |
+| ---------------------- | ----------------------------------------------------------------------------- |
+| `npm run dev`          | フロントエンドとバックエンドを同時に起動する（`front` / `back` と色分け表示） |
+| `npm run format`       | Prettier で全ファイルを整形する                                               |
+| `npm run format:check` | 整形が必要なファイルがないか確認する（変更はしない）                          |
+| `npm run tree`         | フォルダ構成を表示する                                                        |
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+`prepare` は `npm install` のときに自動で実行され、コミット時の自動整形（husky）を有効にします。手動で実行する必要はありません。
