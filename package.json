@@ -4,8 +4,15 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
+        "dev": "concurrently -n front,back -c cyan,yellow \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\"",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "prepare": "husky",
         "tree": "tree -L 4 -I \"node_modules\""
+    },
+    "lint-staged": {
+        "*.{js,jsx,json,css,html}": "prettier --write",
+        "*.md": "prettier --write"
     },
     "repository": {
         "type": "git",
@@ -20,6 +27,10 @@
     },
     "homepage": "https://github.com/ryuyafukuoka-cmyk/CareerLink#readme",
     "devDependencies": {
+        "concurrently": "^10.0.7",
+        "husky": "^9.1.7",
+        "lint-staged": "^17.6.0",
+        "prettier": "^3.9.10",
         "tree-node-cli": "^3.0.0"
     }
 }
