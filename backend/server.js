@@ -1,3 +1,4 @@
+// Local development entry point. The Lambda handler will be a separate file.
 const express = require('express');
 
 const app = express();
@@ -9,10 +10,6 @@ app.get('/api/health', (req, res) => {
     res.json({ data: { status: 'ok' } });
 });
 
-app.get('/', (req, res) => {
-    res.send('CareerLink backend is running');
-});
-
 app.listen(PORT, () => {
-    console.log(`Backend running on http://localhost:${PORT}`);
+    console.log(`CareerLink backend listening on http://localhost:${PORT}`);
 });
