@@ -1,0 +1,12 @@
+.empty-state {
+    padding: var(--space-6) var(--space-4);
+    text-align: center;
+    color: var(--color-text-muted);
+    background: var(--color-surface);
+    border: var(--border-width) dashed var(--color-border-strong);
+    border-radius: var(--radius-md);
+}
+
+.empty-state__action {
+    margin-top: var(--space-4);
+}

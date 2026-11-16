@@ -1,0 +1,35 @@
+.placeholder-page {
+    max-width: var(--content-max-width);
+    margin: 0 auto;
+    padding: var(--space-5);
+}
+
+.placeholder-page__id {
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.placeholder-page__info {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: var(--space-1) var(--space-4);
+    margin: var(--space-4) 0;
+    font-size: var(--font-size-sm);
+}
+
+.placeholder-page__param {
+    display: contents;
+}
+
+.placeholder-page__info dt {
+    color: var(--color-text-muted);
+}
+
+.placeholder-page__info dd {
+    font-family: var(--font-family-mono);
+}
+
+.placeholder-page__note {
+    color: var(--color-text-muted);
+}

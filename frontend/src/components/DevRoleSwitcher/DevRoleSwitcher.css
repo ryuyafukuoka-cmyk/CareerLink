@@ -1,0 +1,25 @@
+.dev-role-switcher {
+    position: fixed;
+    right: var(--space-4);
+    bottom: var(--space-4);
+    z-index: var(--z-toast);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-warning-soft);
+    border: var(--border-width) solid var(--color-warning);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    font-size: var(--font-size-xs);
+}
+
+.dev-role-switcher__label {
+    font-weight: var(--font-weight-bold);
+    color: var(--color-warning);
+}
+
+.dev-role-switcher__select {
+    font: inherit;
+    padding: var(--space-1);
+}
