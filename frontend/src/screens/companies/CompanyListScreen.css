@@ -1,0 +1,62 @@
+.company-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    max-width: var(--content-max-width);
+    margin: 0 auto;
+    padding: var(--space-5);
+}
+
+.company-list__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+}
+
+.company-list__search {
+    max-width: var(--form-max-width);
+    padding: var(--space-4);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.company-list__search-actions {
+    display: flex;
+    gap: var(--space-3);
+}
+
+.company-list__table-wrap {
+    overflow-x: auto;
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.company-list__table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.company-list__table th,
+.company-list__table td {
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
+    vertical-align: top;
+    border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.company-list__table th {
+    font-size: var(--font-size-sm);
+    background: var(--color-surface-alt);
+}
+
+.company-list__table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.company-list__kana {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}

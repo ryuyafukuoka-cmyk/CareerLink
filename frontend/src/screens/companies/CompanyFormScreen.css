@@ -1,0 +1,23 @@
+.company-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    max-width: var(--form-max-width);
+    margin: 0 auto;
+    padding: var(--space-5);
+}
+
+.company-form__card {
+    padding: var(--space-5);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.company-form__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-4);
+    margin-top: var(--space-5);
+}

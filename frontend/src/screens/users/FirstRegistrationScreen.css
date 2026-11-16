@@ -1,0 +1,30 @@
+.first-registration {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: var(--space-5);
+}
+
+.first-registration__card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    width: 100%;
+    max-width: 480px;
+    padding: var(--space-6);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.first-registration__title {
+    font-size: var(--font-size-xl);
+}
+
+.first-registration__actions {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+}

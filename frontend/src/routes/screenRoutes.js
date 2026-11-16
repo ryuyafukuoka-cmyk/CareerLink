@@ -5,8 +5,10 @@
 //   'any'                 any logged-in role
 //   ['admin', ...]        only these roles (the API still checks everything again)
 //
-// When a real screen is ready, add `element: <TheScreen />` to its entry.
-// Entries without `element` show PlaceholderPage.
+// layout: 'bare' draws the screen without AppLayout (no header / side menu). Needs a role list in `access`.
+//
+// When a real screen is ready, add it to screenElements.jsx (keyed by path).
+// Screens not listed there show PlaceholderPage.
 //
 // SC-03-03 is the same implementation as SC-02-02 (shared detail screen).
 // SC-05-01 is not used. SC-90-01 to 03 are shared UI parts, not routes.
@@ -31,6 +33,7 @@ export const SCREENS = [
         name: '初回卒業見込み年度',
         path: PATHS.firstRegistration,
         access: [STUDENT],
+        layout: 'bare',
     },
 
     { screenId: 'SC-01-01', name: 'ホーム', path: PATHS.home, access: 'any' },
