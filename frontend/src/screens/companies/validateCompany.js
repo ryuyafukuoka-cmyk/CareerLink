@@ -2,7 +2,8 @@
 // Returns { fieldName: messageId }. An empty object means the input is valid.
 
 // Full-width katakana, long vowel mark, middle dot, half/full-width spaces only (same as the API).
-const KATAKANA_PATTERN = /^[ァ-ヶー・ 　]+$/u;
+// \u30A1-\u30F6 = ァ-ヶ, \u30FC = ー, \u30FB = ・, \u3000 = full-width space (escaped: ESLint rejects the raw character).
+const KATAKANA_PATTERN = /^[\u30A1-\u30F6\u30FC\u30FB \u3000]+$/u;
 
 function isHttpUrl(value) {
     try {

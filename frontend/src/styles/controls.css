@@ -11,7 +11,7 @@
     transition: border-color var(--transition-fast);
 }
 
-.form-control:hover {
+.form-control:hover:not(:disabled) {
     border-color: var(--color-text-muted);
 }
 

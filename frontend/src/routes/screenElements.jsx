@@ -10,7 +10,6 @@ import HomeScreen from '@/screens/home/HomeScreen.jsx';
 import FirstRegistrationScreen from '@/screens/users/FirstRegistrationScreen.jsx';
 import { PATHS } from './paths.js';
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const SCREEN_ELEMENTS = {
     [PATHS.login]: <LoginScreen />,
     [PATHS.accessDenied]: <LoginErrorScreen />,
