@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, generatePath, useNavigate, useParams } from 'react-router-dom';
 import { createCompany, getCompany, updateCompany } from '@/api/companies.js';
 import Button from '@/components/Button/Button.jsx';
@@ -40,6 +40,16 @@ function CompanyForm({ company }) {
     const [formError, setFormError] = useState(null);
     const [saving, setSaving] = useState(false);
 
+    // After a failed check, move the focus to the first field with an error.
+    const formRef = useRef(null);
+    const [focusRequest, setFocusRequest] = useState(0);
+    useEffect(() => {
+        if (focusRequest === 0) return;
+        formRef.current
+            ?.querySelector('.form-field--error input, .form-field--error summary')
+            ?.focus();
+    }, [focusRequest]);
+
     const set = (field, value) => setValues((current) => ({ ...current, [field]: value }));
     const errorText = (field) => (errors[field] ? toMessage(field, errors[field]) : undefined);
 
@@ -60,7 +70,10 @@ function CompanyForm({ company }) {
 
         const found = validateCompany(values);
         setErrors(found);
-        if (Object.keys(found).length > 0) return;
+        if (Object.keys(found).length > 0) {
+            setFocusRequest((n) => n + 1);
+            return;
+        }
 
         setSaving(true);
         try {
@@ -81,6 +94,7 @@ function CompanyForm({ company }) {
         } catch (error) {
             if (Object.keys(error.fieldErrors ?? {}).length > 0) {
                 setErrors(error.fieldErrors);
+                setFocusRequest((n) => n + 1);
             } else if (error.status === 0 || error.status >= 500) {
                 setFormError(getMessage('E-008')); // input stays on screen
             } else {
@@ -95,7 +109,7 @@ function CompanyForm({ company }) {
         : PATHS.companies;
 
     return (
-        <form className="company-form__card" onSubmit={handleSubmit} noValidate>
+        <form ref={formRef} className="company-form__card" onSubmit={handleSubmit} noValidate>
             {formError && <ErrorMessage message={formError} />}
 
             <FormField label="企業名（正式名称）" required error={errorText('nameOfficial')}>
@@ -154,9 +168,9 @@ function CompanyForm({ company }) {
             />
 
             <div className="company-form__actions">
-                <Link className="company-form__cancel" to={cancelPath}>
+                <Button variant="secondary" disabled={saving} onClick={() => navigate(cancelPath)}>
                     キャンセル
-                </Link>
+                </Button>
                 <Button type="submit" loading={saving}>
                     {isEdit ? '更新する' : '登録する'}
                 </Button>
