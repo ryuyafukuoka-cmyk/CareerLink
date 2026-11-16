@@ -77,4 +77,18 @@ function parsePage(raw) {
     return /^\d+$/.test(raw) && Number(raw) >= 1 ? Number(raw) : null;
 }
 
-module.exports = { validateCompanyInput, isValidGraduationYear, isRegionId, parsePage };
+// A real calendar date written as YYYY/MM/DD (2026/02/30 is rejected).
+function isRealDate(value) {
+    if (typeof value !== 'string' || !/^\d{4}\/\d{2}\/\d{2}$/.test(value)) return false;
+    const [y, m, d] = value.split('/').map(Number);
+    const date = new Date(Date.UTC(y, m - 1, d));
+    return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
+}
+
+module.exports = {
+    validateCompanyInput,
+    isValidGraduationYear,
+    isRegionId,
+    parsePage,
+    isRealDate,
+};

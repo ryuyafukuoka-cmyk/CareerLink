@@ -4,6 +4,7 @@ const { authenticate } = require('./auth');
 const { errorHandler, fail } = require('./helpers');
 const { authRoutes } = require('./routes/auth');
 const { companiesRoutes } = require('./routes/companies');
+const { roundsRoutes } = require('./routes/rounds');
 
 function createApp(store) {
     const app = express();
@@ -17,6 +18,7 @@ function createApp(store) {
     api.use(authenticate(store));
     api.use(authRoutes());
     api.use(companiesRoutes(store));
+    api.use(roundsRoutes(store));
     app.use('/api', api);
 
     app.use(() => fail(404, 'NOT_FOUND'));
