@@ -11,6 +11,7 @@ async function loadActor(req, res, next) {
     if (!user || user.status !== USER_STATUSES.ACTIVE) throw forbidden();
     // Actor = authenticated userId + the role stored in RDS (F-001 型).
     req.actor = { userId: user.userId, role: user.role };
+    req.user = user; // full User (U-01 returns it as is)
     next();
 }
 
