@@ -167,7 +167,29 @@ async function getRecordForEdit(actor, param) {
 // Shared by R-05 (save draft), R-06 (complete) and R-07 (edit a completed record).
 // Order: 404 -> role/owner (403) -> state (409) -> immutable fields and content (400).
 // company, round and owner can never change (400 when a different value is sent).
-async function saveExisting(actor, param, body, { from, mode, allowInstructor, withHistory }) {
+async function saveExisting(actor, param, body, options) {
+    const id = parseId(param);
+    const entry = {
+        operatorUserId: actor.userId,
+        operationType: options.operationType,
+        targetType: 'record',
+        // operation_logs.target_id is an INT UNSIGNED.
+        targetId: id !== null && id <= 0xffffffff ? id : null,
+    };
+    try {
+        return await updateExistingRecord(actor, param, body, options, entry);
+    } catch (error) {
+        try {
+            await recordOperationLog({ ...entry, result: 'failure' });
+        } catch {
+            console.error('Failed to save activity record edit failure log');
+        }
+        throw error;
+    }
+}
+
+async function updateExistingRecord(actor, param, body, options, entry) {
+    const { from, mode, allowInstructor, withHistory } = options;
     const { id, record: first } = await loadRecord(param);
     const allowed =
         isOwnerOrAdmin(actor, first) || (allowInstructor && actor.role === ROLES.INSTRUCTOR);
@@ -211,6 +233,7 @@ async function saveExisting(actor, param, body, { from, mode, allowInstructor, w
         await companyRepository.bumpDeletionVersion(conn, Number(record.companyId));
 
         const saved = await recordRepository.findById(id, conn);
+        await recordOperationLog({ ...entry, result: 'success' }, conn);
         return toActivityRecord(saved, await recordRepository.loadContent(id, conn));
     });
 }
@@ -218,6 +241,7 @@ async function saveExisting(actor, param, body, { from, mode, allowInstructor, w
 // R-05 saveDraft: draft stays draft (409 when already completed).
 const saveDraft = (actor, param, body) =>
     saveExisting(actor, param, body, {
+        operationType: 'saveDraft',
         from: 'draft',
         mode: 'draft',
         allowInstructor: false,
@@ -227,6 +251,7 @@ const saveDraft = (actor, param, body) =>
 // R-06 completeActivityRecord: draft -> completed (400 keeps it a draft; 409 when completed).
 const completeActivityRecord = (actor, param, body) =>
     saveExisting(actor, param, body, {
+        operationType: 'completeActivityRecord',
         from: 'draft',
         mode: 'complete',
         allowInstructor: false,
@@ -237,6 +262,7 @@ const completeActivityRecord = (actor, param, body) =>
 // Instructors may edit; the edit is added to the history (editor and time only).
 const updateActivityRecord = (actor, param, body) =>
     saveExisting(actor, param, body, {
+        operationType: 'updateActivityRecord',
         from: 'completed',
         mode: 'complete',
         allowInstructor: true,
