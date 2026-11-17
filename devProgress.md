@@ -1,14 +1,112 @@
-# Dev Progress
-
-Frontend (as of 11/16): Week 1 done; app shell and Wed 11/18 auth/home screens tested OK.
-Company screens (SC-04-01 / 02 / 03) are written and wired in `screenElements.jsx`; walk through them as
-student / instructor / admin (delete is admin only, 409 re-confirm) before ticking them off.
-
-11/16: Week 3 mock server for rounds written (NOT yet run): `backend/mock-server/routes/rounds.js`
-(RD-01 to RD-06), 30-second cooldown in `store.js` (`assertCooldown` / `markCreated`, kind `round`;
-R-01 will use kind `record`), `isRealDate` in `validators.js`, messages E-215 (application date required)
-and E-216 (interview question category missing) added as provisional wording.
-Tip: `MOCK_COOLDOWN_MS=3000 npm run dev:mock` shortens the 30 seconds while testing.
-
-Next (you): run the mock server and try RD-01 to RD-06 (header `X-Mock-User`), lint + format check,
-`feature/app-shell` PR, weekly review (11/20). Then Week 3 screens (11/24 SC-02-04 rounds list).
+CareerLink
+├── README.md
+├── backend
+│ ├── mock-server
+│ │ ├── app.js
+│ │ ├── auth.js
+│ │ ├── helpers.js
+│ │ ├── index.js
+│ │ ├── routes
+│ │ │ ├── auth.js
+│ │ │ ├── companies.js
+│ │ │ └── rounds.js
+│ │ ├── store.js
+│ │ └── validators.js
+│ ├── package-lock.json
+│ ├── package.json
+│ ├── server.js
+│ └── バックエンドメモ.md
+├── devProgress.md
+├── frontend
+│ ├── eslint.config.js
+│ ├── index.html
+│ ├── package-lock.json
+│ ├── package.json
+│ ├── public
+│ │ └── favicon.svg
+│ ├── src
+│ │ ├── App.jsx
+│ │ ├── App.test.jsx
+│ │ ├── api
+│ │ │ ├── auth.js
+│ │ │ ├── client.js
+│ │ │ ├── companies.js
+│ │ │ └── users.js
+│ │ ├── assets
+│ │ ├── auth
+│ │ │ ├── AuthContext.js
+│ │ │ ├── AuthProvider.jsx
+│ │ │ ├── menus.js
+│ │ │ ├── mockAuth.js
+│ │ │ └── useAuth.js
+│ │ ├── components
+│ │ │ ├── AppLayout
+│ │ │ ├── Button
+│ │ │ ├── Checkbox
+│ │ │ ├── ConfirmDialog
+│ │ │ ├── DevRoleSwitcher
+│ │ │ ├── EmptyState
+│ │ │ ├── ErrorMessage
+│ │ │ ├── FormField
+│ │ │ ├── Loading
+│ │ │ ├── Notice
+│ │ │ ├── Pagination
+│ │ │ ├── README.md
+│ │ │ ├── RegionSelect
+│ │ │ ├── Select
+│ │ │ ├── TextArea
+│ │ │ └── TextInput
+│ │ ├── hooks
+│ │ ├── index.css
+│ │ ├── main.jsx
+│ │ ├── messages
+│ │ │ ├── index.js
+│ │ │ └── messages.js
+│ │ ├── mocks
+│ │ │ ├── companies.js
+│ │ │ ├── history.js
+│ │ │ ├── operationLogs.js
+│ │ │ ├── questionCategories.js
+│ │ │ ├── records.js
+│ │ │ ├── regions.js
+│ │ │ ├── rounds.js
+│ │ │ └── users.js
+│ │ ├── routes
+│ │ │ ├── AppRoutes.jsx
+│ │ │ ├── NotFoundPage.jsx
+│ │ │ ├── PlaceholderPage.css
+│ │ │ ├── PlaceholderPage.jsx
+│ │ │ ├── RequireLogin.jsx
+│ │ │ ├── RequireRole.jsx
+│ │ │ ├── RouteNotice.css
+│ │ │ ├── RouteNotice.jsx
+│ │ │ ├── paths.js
+│ │ │ ├── screenElements.jsx
+│ │ │ └── screenRoutes.js
+│ │ ├── screens
+│ │ │ ├── auth
+│ │ │ ├── companies
+│ │ │ ├── home
+│ │ │ └── users
+│ │ ├── setupTests.js
+│ │ ├── styles
+│ │ │ ├── base.css
+│ │ │ ├── controls.css
+│ │ │ ├── reset.css
+│ │ │ └── tokens.css
+│ │ └── utils
+│ │ ├── classNames.js
+│ │ └── pagination.js
+│ ├── vite.config.js
+│ └── フロントエンドメモ.md
+├── package-lock.json
+├── package.json
+└── shared
+├── definitions
+│ ├── activity.js
+│ ├── index.js
+│ ├── questionCategories.js
+│ ├── regions.js
+│ ├── roles.js
+│ └── stages.js
+└── 共有メモ.md
