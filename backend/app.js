@@ -11,6 +11,7 @@ const { roundHandler } = require('./handlers/roundHandler');
 const { recordHandler } = require('./handlers/recordHandler');
 const { searchHandler } = require('./handlers/searchHandler');
 const { karteHandler } = require('./handlers/karteHandler');
+const { operationLogHandler } = require('./handlers/operationLogHandler');
 
 function createApp({ authenticate }) {
     const app = express();
@@ -31,7 +32,7 @@ function createApp({ authenticate }) {
     api.use(recordHandler()); // R-01 to R-09, S-02
     api.use(searchHandler()); // S-01, S-03
     api.use(karteHandler()); // K-01 to K-03
-    // Next step adds the logs (L) handler here.
+    api.use(operationLogHandler()); // L-01 and L-02
     app.use('/api', api);
 
     app.use((req, res, next) => next(new AppError('NOT_FOUND')));
