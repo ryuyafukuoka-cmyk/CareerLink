@@ -59,4 +59,17 @@ async function find(id) {
     return row ? toLog(row) : null;
 }
 
-module.exports = { targetTables, list, find };
+async function recordOperationLog(
+    { operatorUserId, operationType, targetType, targetId, result },
+    conn,
+) {
+    await query(
+        `INSERT INTO operation_logs
+            (users_id, operation_type, target_table, target_id, operation_result)
+         VALUES (?, ?, ?, ?, ?)`,
+        [operatorUserId, operationType, targetTables.get(targetType), targetId, result],
+        conn,
+    );
+}
+
+module.exports = { targetTables, list, find, recordOperationLog };

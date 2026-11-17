@@ -8,6 +8,7 @@ const { canViewPosterName } = require('../common/visibility');
 const { requireRole } = require('../authorization/guards');
 const { withTransaction } = require('../db/pool');
 const recordRepository = require('../repositories/recordRepository');
+const { recordOperationLog } = require('../repositories/operationLogRepository');
 const roundRepository = require('../repositories/roundRepository');
 const companyRepository = require('../repositories/companyRepository');
 const userRepository = require('../repositories/userRepository');
@@ -46,6 +47,25 @@ async function loadRecord(param) {
 // The company row is locked first (same order as RD-04), so the round's stage cannot change
 // between the category check and the insert.
 async function createActivityRecord(actor, body) {
+    const entry = {
+        operatorUserId: actor.userId,
+        operationType: 'createActivityRecord',
+        targetType: 'record',
+    };
+
+    try {
+        return await saveActivityRecord(actor, body, entry);
+    } catch (error) {
+        try {
+            await recordOperationLog({ ...entry, targetId: null, result: 'failure' });
+        } catch {
+            console.error('Failed to save R-01 failure log');
+        }
+        throw error;
+    }
+}
+
+async function saveActivityRecord(actor, body, entry) {
     const input = isObject(body) ? body : {};
     const mode = input.mode;
     if (mode !== 'draft' && mode !== 'complete') {
@@ -98,6 +118,7 @@ async function createActivityRecord(actor, body) {
         await recordRepository.replaceContent(conn, id, content);
         await companyRepository.bumpDeletionVersion(conn, companyId);
         await markCreationSucceeded(conn, actor, 'activityRecord');
+        await recordOperationLog({ ...entry, targetId: id, result: 'success' }, conn);
 
         const record = await recordRepository.findById(id, conn);
         return toActivityRecord(record, await recordRepository.loadContent(id, conn));
