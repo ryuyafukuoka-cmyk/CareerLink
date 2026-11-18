@@ -188,7 +188,7 @@ function ApplicationRoundDetailScreen() {
                     <ul className="round-screen__history">
                         {history.map((item) => (
                             <li key={`${item.editorUserId}|${item.editedAt}`}>
-                                {formatDateTime(item.editedAt)}　{item.editorName}
+                                {formatDateTime(item.editedAt)} {item.editorName}
                             </li>
                         ))}
                     </ul>

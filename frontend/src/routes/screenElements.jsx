@@ -7,6 +7,8 @@ import CompanyDetailScreen from '@/screens/companies/CompanyDetailScreen.jsx';
 import CompanyFormScreen from '@/screens/companies/CompanyFormScreen.jsx';
 import CompanyListScreen from '@/screens/companies/CompanyListScreen.jsx';
 import ActivityRecordFormScreen from '@/screens/records/ActivityRecordFormScreen.jsx';
+import RecordDetailScreen from '@/screens/records/RecordDetailScreen.jsx';
+import RecordListScreen from '@/screens/records/RecordListScreen.jsx';
 import HomeScreen from '@/screens/home/HomeScreen.jsx';
 import ApplicationRoundDetailScreen from '@/screens/rounds/ApplicationRoundDetailScreen.jsx';
 import ApplicationRoundListScreen from '@/screens/rounds/ApplicationRoundListScreen.jsx';
@@ -24,7 +26,11 @@ export const SCREEN_ELEMENTS = {
     [PATHS.companyNew]: <CompanyFormScreen />,
     [PATHS.companyEdit]: <CompanyFormScreen />,
     [PATHS.companyDetail]: <CompanyDetailScreen />,
+    [PATHS.records]: <RecordListScreen />,
     [PATHS.recordNew]: <ActivityRecordFormScreen />,
+    [PATHS.recordEdit]: <ActivityRecordFormScreen />,
+    [PATHS.recordDetail]: <RecordDetailScreen />,
+    [PATHS.searchRecordDetail]: <RecordDetailScreen />,
     [PATHS.rounds]: <ApplicationRoundListScreen />,
     [PATHS.roundNew]: <RoundCreateScreen />,
     [PATHS.roundEdit]: <RoundEditScreen />,
