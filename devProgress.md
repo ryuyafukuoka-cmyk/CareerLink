@@ -1,2 +1,2 @@
-Frontend: app shell, auth, home, company and all four round screens (SC-02-04/05/06/07) are written, so Week 3 is functionally complete (untested, not committed).
-Next: Week 4 activity records (mock server R-01 to R-09, then SC-02-03 form).
+Frontend: Week 3 (company and round screens) is written; Week 4 has the mock records API, shared getSectionDefinitions, and the SC-02-03 record form for both create and edit: all four section inputs, client validation, R-01 / R-05 / R-06 / R-07 saves (C-001 confirm for completing a draft, submit lock, 429 countdown, no auto-resend, unsaved-changes confirm). In edit mode student, company and round are fixed; a completed record has a single [保存] button.
+Next: the record list (SC-02-01), the record detail (SC-02-02) with the delete dialog (C-002) and edit / delete buttons per role, then the role walkthrough and review.
