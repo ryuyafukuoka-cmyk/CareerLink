@@ -286,17 +286,39 @@ async function getDeleteConfirmInfo(actor, param) {
 // R-09 deleteActivityRecord: physical delete of the record and everything under it, in one
 // transaction. Company master, users and the round stay.
 async function deleteActivityRecord(actor, param) {
-    const { id, record: first } = await loadRecord(param);
-    if (!isOwnerOrAdmin(actor, first)) throw forbidden();
+    const requestedId = parseId(param);
+    const entry = {
+        operatorUserId: actor.userId,
+        operationType: 'deleteActivityRecord',
+        targetType: 'record',
+        // operation_logs.target_id is an INT UNSIGNED.
+        targetId: requestedId !== null && requestedId <= 0xffffffff ? requestedId : null,
+    };
 
-    await withTransaction(async (conn) => {
-        if (!(await companyRepository.lockById(conn, Number(first.companyId)))) throw notFound();
-        const record = await recordRepository.findById(id, conn, { forUpdate: true });
-        if (!record) throw notFound();
-        await recordRepository.deleteWithChildren(conn, id);
-        await companyRepository.bumpDeletionVersion(conn, Number(record.companyId));
-    });
-    return null;
+    try {
+        const { id, record: first } = await loadRecord(param);
+        if (!isOwnerOrAdmin(actor, first)) throw forbidden();
+
+        await withTransaction(async (conn) => {
+            if (!(await companyRepository.lockById(conn, Number(first.companyId)))) {
+                throw notFound();
+            }
+            const record = await recordRepository.findById(id, conn, { forUpdate: true });
+            if (!record) throw notFound();
+
+            await recordRepository.deleteWithChildren(conn, id);
+            await companyRepository.bumpDeletionVersion(conn, Number(record.companyId));
+            await recordOperationLog({ ...entry, result: 'success' }, conn);
+        });
+        return null;
+    } catch (error) {
+        try {
+            await recordOperationLog({ ...entry, result: 'failure' });
+        } catch {
+            console.error('Failed to save activity record deletion failure log');
+        }
+        throw error;
+    }
 }
 
 // S-02 getRecordDetail: a draft only for its owner / admins (403), completed for everyone.
