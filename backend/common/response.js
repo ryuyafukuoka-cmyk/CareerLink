@@ -29,13 +29,8 @@ function errorHandler(err, req, res, next) {
             err.headers,
         );
     }
-    if (err.type === 'entity.too.large') {
-        return sendError(
-            res,
-            400,
-            'VALIDATION_ERROR',
-            '入力内容が多すぎます。文章を短くしてからもう一度保存してください。',
-        );
+    if (err.type === 'entity.parse.failed') {
+        return sendError(res, 400, 'VALIDATION_ERROR', DEFAULT_MESSAGES.VALIDATION_ERROR);
     }
     // Unexpected: log the detail server-side only (CloudWatch Logs), never return it.
     console.error('Unexpected error:', err);
