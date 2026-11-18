@@ -1,2 +1,2 @@
-Frontend: Week 3 (company and round screens) is written; Week 4 has the mock records API plus shared getSectionDefinitions and the SC-02-03 form skeleton (company, round, date, type tags; section inputs not yet built).
-Next: interview section inputs, then exam/briefing/other sections and validation, then save flows.
+Frontend: Week 3 (company and round screens) is written; Week 4 has the mock records API, shared getSectionDefinitions, and the SC-02-03 record form for both create and edit: all four section inputs, client validation, R-01 / R-05 / R-06 / R-07 saves (C-001 confirm for completing a draft, submit lock, 429 countdown, no auto-resend, unsaved-changes confirm). In edit mode student, company and round are fixed; a completed record has a single [保存] button.
+Next: the record list (SC-02-01), the record detail (SC-02-02) with the delete dialog (C-002) and edit / delete buttons per role, then the role walkthrough and review.

@@ -55,3 +55,11 @@
     gap: var(--space-4);
     margin-top: var(--space-5);
 }
+
+/* Groups every input so they are all disabled while saving (a bare fieldset has no look of its own). */
+.record-form__fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
