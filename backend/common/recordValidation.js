@@ -6,6 +6,7 @@ const { validationError } = require('./errors');
 const { isRealDate, toDbDate } = require('./dateUtil');
 
 const TEXT_MAX = 20000; // TEXT columns
+const TEXT_MAX_BYTES = 65535; // Capacity of a MariaDB TEXT column in bytes.
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 
 // Collects errors; `incomplete` becomes true when a complete-only required item is missing.
@@ -85,6 +86,10 @@ function parseInterview(c, raw, stage) {
                         const t = text(c, f, `${qp}.followUps[${j}]`);
                         if (t !== null) followUps.push(t);
                     });
+                    // The repository serializes all follow-ups into one TEXT column.
+                    if (Buffer.byteLength(JSON.stringify(followUps), 'utf8') > TEXT_MAX_BYTES) {
+                        c.add(`${qp}.followUps`, 'E-202');
+                    }
                 }
             }
             questions.push({

@@ -15,6 +15,9 @@ const { operationLogHandler } = require('./handlers/operationLogHandler');
 
 function createApp({ authenticate }) {
     const app = express();
+
+    // A record can contain several long text fields across multiple sections.
+    app.use('/api/activity-records', express.json({ limit: '512kb' }));
     app.use(express.json());
 
     // Public (the API Gateway route for it has no JWT authorizer).
