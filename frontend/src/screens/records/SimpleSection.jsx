@@ -1,6 +1,7 @@
 import FormField from '@/components/FormField/FormField.jsx';
 import TextArea from '@/components/TextArea/TextArea.jsx';
 import TextInput from '@/components/TextInput/TextInput.jsx';
+import { RECORD_NUMBER_LIMITS } from '../../../../backend/common/recordInput.mjs';
 
 // Exam, briefing and other sections of the record form (F-004-01).
 // The inputs come from the shared section definition (getSectionDefinitions), so labels, input
@@ -28,7 +29,11 @@ function SimpleSection({ section, value, onChange, errors = {} }) {
                         <TextInput
                             type={field.input === 'number' ? 'number' : 'text'}
                             {...(field.input === 'number'
-                                ? { inputMode: 'numeric', min: '0', step: '1' }
+                                ? {
+                                      inputMode: 'numeric',
+                                      ...RECORD_NUMBER_LIMITS.duration,
+                                      step: 1,
+                                  }
                                 : {})}
                             value={value[field.name]}
                             onChange={set(field.name)}

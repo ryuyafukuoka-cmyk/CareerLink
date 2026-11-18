@@ -1,6 +1,7 @@
 // Builds the Express app. It is used by both server.js (local) and lambda.js (AWS), so the only
 // thing that differs between them is the injected `authenticate` middleware.
 const express = require('express');
+const { bodyLimitBytes } = require('./common/recordInputRules.json');
 const { AppError } = require('./common/errors');
 const { errorHandler } = require('./common/response');
 const { loadActor } = require('./authorization/loadActor');
@@ -17,7 +18,7 @@ function createApp({ authenticate }) {
     const app = express();
 
     // A record can contain several long text fields across multiple sections.
-    app.use('/api/activity-records', express.json({ limit: '512kb' }));
+    app.use('/api/activity-records', express.json({ limit: bodyLimitBytes }));
     app.use(express.json());
 
     // Public (the API Gateway route for it has no JWT authorizer).

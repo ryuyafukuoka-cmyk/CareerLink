@@ -5,6 +5,7 @@ const {
     ACTIVITY_TYPE_BY_ID,
     ACTIVITY_TYPE_ID_BY_VALUE,
     QUESTION_CATEGORY_BY_ID,
+    QUESTION_CATEGORY_ID_BY_NAME,
     RECORD_STATUS_BY_VALUE,
     RECORD_STATUS_VALUE,
 } = require('../common/constants');
@@ -206,7 +207,7 @@ async function replaceContent(conn, activityId, { activityTypes, sections }) {
                      VALUES (?, ?, ?, ?, ?, ?)`,
                     [
                         result.insertId,
-                        q.categoryId,
+                        QUESTION_CATEGORY_ID_BY_NAME[q.category] ?? null,
                         q.content,
                         q.answer,
                         q.followUps.length ? JSON.stringify(q.followUps) : null,

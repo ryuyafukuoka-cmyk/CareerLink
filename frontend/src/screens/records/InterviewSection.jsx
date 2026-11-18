@@ -4,6 +4,7 @@ import FormField from '@/components/FormField/FormField.jsx';
 import Select from '@/components/Select/Select.jsx';
 import TextArea from '@/components/TextArea/TextArea.jsx';
 import TextInput from '@/components/TextInput/TextInput.jsx';
+import { RECORD_NUMBER_LIMITS } from '../../../../backend/common/recordInput.mjs';
 import { emptyQuestion } from './sectionDefaults.js';
 import './InterviewSection.css';
 
@@ -48,7 +49,7 @@ function InterviewSection({ value, onChange, needCategory, errors = {} }) {
                 <TextInput
                     type="number"
                     inputMode="numeric"
-                    min="0"
+                    {...RECORD_NUMBER_LIMITS.duration}
                     step="1"
                     value={value.durationMinutes}
                     onChange={fromEvent('durationMinutes')}
@@ -67,7 +68,7 @@ function InterviewSection({ value, onChange, needCategory, errors = {} }) {
                 <TextInput
                     type="number"
                     inputMode="numeric"
-                    min="0"
+                    {...RECORD_NUMBER_LIMITS.interviewerCount}
                     step="1"
                     value={value.interviewerCount}
                     onChange={fromEvent('interviewerCount')}
@@ -122,7 +123,7 @@ function InterviewSection({ value, onChange, needCategory, errors = {} }) {
                             />
                         </FormField>
 
-                        <FormField label="回答">
+                        <FormField label="回答" error={errors[`questions.${qIndex}.answer`]}>
                             <TextArea
                                 rows={3}
                                 value={question.answer}
@@ -132,16 +133,30 @@ function InterviewSection({ value, onChange, needCategory, errors = {} }) {
                             />
                         </FormField>
 
-                        <FormField group label="深掘り質問" hint="質問文のみを記録します。">
+                        <FormField
+                            group
+                            label="深掘り質問"
+                            hint="質問文のみを記録します。"
+                            error={errors[`questions.${qIndex}.followUps`]}
+                        >
                             {question.followUps.map((text, fIndex) => (
                                 <div key={fIndex} className="interview-section__followup">
-                                    <TextInput
-                                        aria-label={`質問${qIndex + 1}の深掘り質問${fIndex + 1}`}
-                                        value={text}
-                                        onChange={(event) =>
-                                            setFollowUp(qIndex, fIndex, event.target.value)
+                                    <FormField
+                                        label={
+                                            <span className="visually-hidden">
+                                                {`質問${qIndex + 1}の深掘り質問${fIndex + 1}`}
+                                            </span>
                                         }
-                                    />
+                                        className="interview-section__followup-input"
+                                        error={errors[`questions.${qIndex}.followUps.${fIndex}`]}
+                                    >
+                                        <TextInput
+                                            value={text}
+                                            onChange={(event) =>
+                                                setFollowUp(qIndex, fIndex, event.target.value)
+                                            }
+                                        />
+                                    </FormField>
                                     <Button
                                         variant="secondary"
                                         onClick={() => removeFollowUp(qIndex, fIndex)}
@@ -176,11 +191,11 @@ function InterviewSection({ value, onChange, needCategory, errors = {} }) {
                 <TextArea value={value.impression} onChange={fromEvent('impression')} />
             </FormField>
 
-            <FormField label="注意点">
+            <FormField label="注意点" error={errors.caution}>
                 <TextArea value={value.caution} onChange={fromEvent('caution')} />
             </FormField>
 
-            <FormField label="後輩へのアドバイス">
+            <FormField label="後輩へのアドバイス" error={errors.adviceToJuniors}>
                 <TextArea value={value.adviceToJuniors} onChange={fromEvent('adviceToJuniors')} />
             </FormField>
         </div>

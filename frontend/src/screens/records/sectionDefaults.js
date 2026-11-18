@@ -43,7 +43,8 @@ export const emptySections = () => ({
 
 const toNumberOrNull = (text) => {
     const trimmed = String(text ?? '').trim();
-    return trimmed === '' ? null : Number(trimmed);
+    if (trimmed === '') return null;
+    return /^\d+$/.test(trimmed) ? Number(trimmed) : trimmed;
 };
 const toTextOrUndefined = (text) => {
     const trimmed = String(text ?? '').trim();
@@ -52,7 +53,7 @@ const toTextOrUndefined = (text) => {
 
 /**
  * InterviewSection form state -> API InterviewSection.
- * Empty optional text is left out (the API stores it as NULL). Empty follow-ups are dropped.
+ * Empty optional text is left out. Follow-up indices match the form until validation.
  * A question with no category is sent with category null (allowed only when the round is "considering").
  */
 export function toInterviewPayload(form) {
@@ -64,7 +65,7 @@ export function toInterviewPayload(form) {
             category: q.category === '' ? null : q.category,
             content: q.content.trim(),
             answer: toTextOrUndefined(q.answer),
-            followUps: q.followUps.map((text) => text.trim()).filter((text) => text !== ''),
+            followUps: q.followUps.map((text) => text.trim()),
         })),
         impression: form.impression.trim(),
         caution: toTextOrUndefined(form.caution),

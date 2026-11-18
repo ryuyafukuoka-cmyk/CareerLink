@@ -1,5 +1,8 @@
 // Throwaway mock server (deleted on 12/20). Response helpers matching the API envelope.
 
+const { AppError } = require('../common/errors');
+const { errorHandler: apiErrorHandler } = require('../common/response');
+
 const DEFAULT_MESSAGES = {
     VALIDATION_ERROR: '入力内容に誤りがあります。内容を確認してください。',
     UNAUTHORIZED: 'ログインの有効期限が切れました。もう一度ログインしてください。',
@@ -32,7 +35,6 @@ function fail(status, code, message, reason, details, headers) {
 }
 
 // Express error middleware (must keep 4 arguments).
-// eslint-disable-next-line no-unused-vars
 function errorHandler(err, req, res, next) {
     if (err instanceof HttpError) {
         const error = { code: err.code, message: err.message };
@@ -41,10 +43,12 @@ function errorHandler(err, req, res, next) {
         if (err.headers) res.set(err.headers);
         return res.status(err.status).json({ error });
     }
-    if (err.type === 'entity.parse.failed') {
-        return res.status(400).json({
-            error: { code: 'VALIDATION_ERROR', message: DEFAULT_MESSAGES.VALIDATION_ERROR },
-        });
+    if (
+        err instanceof AppError ||
+        err.type === 'entity.parse.failed' ||
+        err.type === 'entity.too.large'
+    ) {
+        return apiErrorHandler(err, req, res, next);
     }
     console.error(err);
     return res.status(500).json({

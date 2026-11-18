@@ -1,5 +1,6 @@
 // Builds the mock Express app. Routes are added per schedule week (rounds, records, search, admin).
 const express = require('express');
+const { bodyLimitBytes } = require('../common/recordInputRules.json');
 const { authenticate } = require('./auth');
 const { errorHandler, fail } = require('./helpers');
 const { authRoutes } = require('./routes/auth');
@@ -10,6 +11,7 @@ const { usersRoutes } = require('./routes/users');
 
 function createApp(store) {
     const app = express();
+    app.use('/api/activity-records', express.json({ limit: bodyLimitBytes }));
     app.use(express.json());
 
     app.get('/api/health', (req, res) => {

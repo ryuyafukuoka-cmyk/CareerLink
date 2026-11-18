@@ -34,6 +34,10 @@ import { useSubmitLock } from '@/hooks/useSubmitLock.js';
 import { getErrorMessage, getMessage } from '@/messages/index.js';
 import { PATHS } from '@/routes/paths.js';
 import { studentOptions } from '@/screens/rounds/roundHelpers.js';
+import {
+    ACTIVITY_RECORD_BODY_TOO_LARGE_MESSAGE,
+    isRecordBodyTooLarge,
+} from '../../../../backend/common/recordInput.mjs';
 import InterviewSection from './InterviewSection.jsx';
 import SimpleSection from './SimpleSection.jsx';
 import { emptySections, fromSectionsPayload, toSectionsPayload } from './sectionDefaults.js';
@@ -113,7 +117,7 @@ function RecordForm({ companies, students, record }) {
                 : { conductedOn: '', activityTypes: [], sections: emptySections() },
         ),
     );
-    // Field errors { apiFieldName: text } and the message at the top of the form, from the last check.
+    // Field errors { formFieldName: text } and the message at the top of the form, from the last check.
     const [fieldErrors, setFieldErrors] = useState({});
     const [formError, setFormError] = useState('');
 
@@ -203,55 +207,64 @@ function RecordForm({ companies, students, record }) {
 
     const sections = getSectionDefinitions(values.activityTypes);
     const selectedRound = rounds.find((r) => r.applicationRoundId === selectedRoundId);
-    // Interview question category: optional only while the chosen round is "considering"
-    // (drafts included). With no round chosen yet it is shown as required.
-    const needCategory = selectedRound?.stage !== 'considering';
+    const roundStage = selectedRound?.stage;
+    const needCategory = Boolean(roundStage && roundStage !== 'considering');
 
-    // Check the input for a save mode.
-    function checkInput(mode) {
-        const errors = validateActivityRecord(
-            { ...values, applicationRoundId: selectedRoundId },
-            mode,
-            selectedRound?.stage,
-        );
-        const texts = getFieldErrorTexts(errors, values.activityTypes);
-        setFieldErrors(texts);
-        const hasErrors = Object.keys(errors).length > 0;
-        const messageId = mode === SAVE_MODES.COMPLETE ? 'E-213' : 'E-001';
-        setFormError(hasErrors ? getMessage(messageId) : '');
-        return !hasErrors;
+    function showFieldErrors(errors, mode) {
+        setFieldErrors(getFieldErrorTexts(errors, values.activityTypes));
+        const messageId =
+            mode === SAVE_MODES.COMPLETE && errors.sections === 'E-213' ? 'E-213' : 'E-001';
+        setFormError(getMessage(messageId));
     }
 
-    // [下書き保存] / [記入完了]: check the input, ask for confirmation before completing, then save.
-    function requestSave(mode) {
-        if (submitting || retry.secondsLeft > 0) return;
+    // Check the request before submitting or opening the confirmation dialog.
+    function requestSave(mode, confirmed = false) {
+        if (submitting || roundsLoading || retry.secondsLeft > 0) return;
         setResultUnknown(false);
-        if (!checkInput(mode)) return;
+
+        const input = {
+            companyId: values.companyId,
+            applicationRoundId: selectedRoundId,
+            activityTypes: values.activityTypes,
+            ...(values.conductedOn.trim() && { conductedOn: values.conductedOn.trim() }),
+            sections: toSectionsPayload(values.activityTypes, values.sections),
+            ...(!isEdit && { mode }),
+            ...(!isEdit && isAdmin && { ownerUserId: values.studentUserId }),
+        };
+        if (isRecordBodyTooLarge(input)) {
+            setFieldErrors({});
+            setFormError(ACTIVITY_RECORD_BODY_TOO_LARGE_MESSAGE);
+            setConfirmCompleteOpen(false);
+            return;
+        }
+
+        // If the stage is unavailable, leave its category requirement to the server.
+        const errors = validateActivityRecord(input, mode, roundStage ?? 'considering');
+        if (Object.keys(errors).length > 0) {
+            showFieldErrors(errors, mode);
+            setConfirmCompleteOpen(false);
+            return;
+        }
+
+        setFieldErrors({});
+        setFormError('');
+
         // Completing a draft publishes it, so ask first. Saving a completed record needs no confirm.
-        if (mode === SAVE_MODES.COMPLETE && !isCompletedRecord) setConfirmCompleteOpen(true);
-        else save(mode);
+        if (mode === SAVE_MODES.COMPLETE && !isCompletedRecord && !confirmed) {
+            setConfirmCompleteOpen(true);
+        } else {
+            save(mode, input);
+        }
     }
 
     // R-01 (new), R-05 (draft), R-06 (complete a draft) or R-07 (edit a completed record).
     // Nothing is resent automatically: if the result is unknown, the person checks the list.
-    function save(mode) {
+    function save(mode, input) {
         setPendingMode(mode);
         run(async () => {
             try {
-                const input = {
-                    companyId: values.companyId,
-                    applicationRoundId: selectedRoundId,
-                    activityTypes: values.activityTypes,
-                    ...(values.conductedOn.trim() && { conductedOn: values.conductedOn.trim() }),
-                    sections: toSectionsPayload(values.activityTypes, values.sections),
-                };
                 if (!isEdit) {
-                    // Only an admin names the owner; a student's record is owned by the student.
-                    await createActivityRecord({
-                        ...input,
-                        ...(isAdmin && { ownerUserId: values.studentUserId }),
-                        mode,
-                    });
+                    await createActivityRecord(input);
                     navigate(generatePath(PATHS.roundDetail, { roundId: selectedRoundId }), {
                         replace: true,
                         state: { noticeId: mode === SAVE_MODES.COMPLETE ? 'S-003' : 'S-002' },
@@ -277,8 +290,7 @@ function RecordForm({ companies, students, record }) {
                 if (error.code === 'RATE_LIMITED') {
                     retry.start(error.retryAfter ?? 30);
                 } else if (Object.keys(error.fieldErrors ?? {}).length > 0) {
-                    setFieldErrors(getFieldErrorTexts(error.fieldErrors, values.activityTypes));
-                    setFormError(getMessage(mode === SAVE_MODES.COMPLETE ? 'E-213' : 'E-001'));
+                    showFieldErrors(error.fieldErrors, mode);
                 } else if (error.status === 0 || error.status >= 500) {
                     setFormError(getMessage('E-008'));
                     setResultUnknown(true);
@@ -309,7 +321,7 @@ function RecordForm({ companies, students, record }) {
 
             <fieldset className="record-form__fieldset" disabled={submitting}>
                 {isAdmin && !isEdit && (
-                    <FormField label="対象学生" required>
+                    <FormField label="対象学生" required error={fieldErrors.ownerUserId}>
                         <Select
                             placeholder="学生を選択"
                             options={studentOptions(students)}
@@ -460,7 +472,7 @@ function RecordForm({ companies, students, record }) {
                     <Button
                         variant="secondary"
                         loading={submitting && pendingMode === SAVE_MODES.DRAFT}
-                        disabled={submitting || retry.secondsLeft > 0}
+                        disabled={submitting || roundsLoading || retry.secondsLeft > 0}
                         onClick={() => requestSave(SAVE_MODES.DRAFT)}
                     >
                         下書き保存
@@ -468,7 +480,7 @@ function RecordForm({ companies, students, record }) {
                 )}
                 <Button
                     loading={submitting && pendingMode === SAVE_MODES.COMPLETE}
-                    disabled={submitting || retry.secondsLeft > 0}
+                    disabled={submitting || roundsLoading || retry.secondsLeft > 0}
                     onClick={() => requestSave(SAVE_MODES.COMPLETE)}
                 >
                     {isCompletedRecord ? '保存' : '記入完了'}
@@ -484,7 +496,7 @@ function RecordForm({ companies, students, record }) {
                 message={getMessage('C-001')}
                 confirmLabel="記入完了にする"
                 loading={submitting}
-                onConfirm={() => save(SAVE_MODES.COMPLETE)}
+                onConfirm={() => requestSave(SAVE_MODES.COMPLETE, true)}
                 onCancel={() => setConfirmCompleteOpen(false)}
             />
             <ConfirmDialog

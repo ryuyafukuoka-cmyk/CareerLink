@@ -3,7 +3,12 @@
 const { ROLES } = require('../common/constants');
 const { forbidden, notFound, conflict, validationError } = require('../common/errors');
 const { parseId } = require('../common/validation');
-const { parseRecordContent } = require('../common/recordValidation');
+const { toDbDate } = require('../common/dateUtil');
+const {
+    checkRecordCreateIds,
+    checkRecordImmutableIds,
+    loadRecordContentParser,
+} = require('../common/recordValidation');
 const { canViewPosterName } = require('../common/visibility');
 const { requireRole } = require('../authorization/guards');
 const { withTransaction } = require('../db/pool');
@@ -89,13 +94,10 @@ async function saveActivityRecord(actor, body, entry) {
         ownerUserId = owner.userId;
     }
 
-    const companyId = typeof input.companyId === 'string' ? parseId(input.companyId) : null;
-    const roundId =
-        typeof input.applicationRoundId === 'string' ? parseId(input.applicationRoundId) : null;
-    const idErrors = [];
-    if (companyId === null) idErrors.push({ field: 'companyId', messageId: 'E-201' });
-    if (roundId === null) idErrors.push({ field: 'applicationRoundId', messageId: 'E-214' });
-    if (idErrors.length > 0) throw validationError(idErrors);
+    checkRecordCreateIds(input);
+    const companyId = Number(input.companyId);
+    const roundId = Number(input.applicationRoundId);
+    const parseRecordContent = await loadRecordContentParser();
 
     return withTransaction(async (conn) => {
         if (!(await companyRepository.lockById(conn, companyId))) throw notFound();
@@ -111,7 +113,7 @@ async function saveActivityRecord(actor, body, entry) {
         const status = mode === 'complete' ? 'completed' : 'draft';
         const id = await recordRepository.insertActivity(
             conn,
-            { roundId, dbDate: content.dbDate, status },
+            { roundId, dbDate: content.conductedOn && toDbDate(content.conductedOn), status },
             Number(actor.userId),
         );
         // Set before this point: the owner comes from the round; created_by = the operator.
@@ -197,20 +199,8 @@ async function updateExistingRecord(actor, param, body, options, entry) {
     if (first.status !== from) throw conflict();
 
     const input = isObject(body) ? body : {};
-    const immutable = [];
-    if (input.companyId !== undefined && input.companyId !== first.companyId) {
-        immutable.push({ field: 'companyId', messageId: 'E-202' });
-    }
-    if (
-        input.applicationRoundId !== undefined &&
-        input.applicationRoundId !== first.applicationRoundId
-    ) {
-        immutable.push({ field: 'applicationRoundId', messageId: 'E-202' });
-    }
-    if (input.ownerUserId !== undefined && input.ownerUserId !== first.ownerUserId) {
-        immutable.push({ field: 'ownerUserId', messageId: 'E-202' });
-    }
-    if (immutable.length > 0) throw validationError(immutable);
+    checkRecordImmutableIds(first, input);
+    const parseRecordContent = await loadRecordContentParser();
 
     return withTransaction(async (conn) => {
         // Lock order: company row, then the record (and its round).
@@ -225,7 +215,10 @@ async function updateExistingRecord(actor, param, body, options, entry) {
         await recordRepository.updateActivity(
             conn,
             id,
-            { dbDate: content.dbDate, status: mode === 'complete' ? 'completed' : 'draft' },
+            {
+                dbDate: content.conductedOn && toDbDate(content.conductedOn),
+                status: mode === 'complete' ? 'completed' : 'draft',
+            },
             Number(actor.userId),
         );
         await recordRepository.replaceContent(conn, id, content);

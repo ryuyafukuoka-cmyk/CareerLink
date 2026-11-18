@@ -1,5 +1,6 @@
 // Response envelope helpers and the Express error middleware.
 const { AppError, DEFAULT_MESSAGES } = require('./errors');
+const { bodyTooLargeMessage } = require('./recordInputRules.json');
 
 // Success: { data }. Defaults to 200; pass 201 for creation.
 function ok(res, data, status = 200) {
@@ -34,12 +35,7 @@ function errorHandler(err, req, res, next) {
     }
 
     if (err.type === 'entity.too.large') {
-        return sendError(
-            res,
-            400,
-            'VALIDATION_ERROR',
-            '入力内容が多すぎます。文章を短くしてからもう一度保存してください。',
-        );
+        return sendError(res, 400, 'VALIDATION_ERROR', bodyTooLargeMessage);
     }
     // Unexpected: log the detail server-side only (CloudWatch Logs), never return it.
     console.error('Unexpected error:', err);

@@ -1,4 +1,5 @@
 // Activity types, record status and save modes.
+import { ACTIVITY_TYPE_VALUES } from '../../backend/common/recordInput.mjs';
 
 export const ACTIVITY_TYPES = Object.freeze({
     INTERVIEW: 'interview',
@@ -15,7 +16,7 @@ export const ACTIVITY_TYPE_LABELS = Object.freeze({
 });
 
 // Display order of the type tags.
-export const ACTIVITY_TYPE_ORDER = Object.freeze(['interview', 'exam', 'briefing', 'other']);
+export const ACTIVITY_TYPE_ORDER = ACTIVITY_TYPE_VALUES;
 
 export const RECORD_STATUSES = Object.freeze({
     DRAFT: 'draft',

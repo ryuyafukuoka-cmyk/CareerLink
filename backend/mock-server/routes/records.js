@@ -1,7 +1,12 @@
 // R-01 to R-09 (activity records) and S-02 (record detail).
 const express = require('express');
 const { ok, fail } = require('../helpers');
-const { validateRecordInput, pickSections } = require('../recordValidation');
+const { parseId } = require('../../common/validation');
+const {
+    checkRecordCreateIds,
+    checkRecordImmutableIds,
+    loadRecordContentParser,
+} = require('../../common/recordValidation');
 
 function validationError(details) {
     fail(400, 'VALIDATION_ERROR', undefined, undefined, details);
@@ -64,28 +69,11 @@ function recordsRoutes(store) {
         return [...drafts, ...completed];
     };
 
-    // Company, round and owner cannot change after the first save (all roles).
-    const assertUnchanged = (record, input) => {
-        const details = [];
-        if (input.companyId !== record.companyId)
-            details.push({ field: 'companyId', messageId: 'E-202' });
-        if (input.applicationRoundId !== record.applicationRoundId) {
-            details.push({ field: 'applicationRoundId', messageId: 'E-202' });
-        }
-        if (input.ownerUserId !== undefined && input.ownerUserId !== record.ownerUserId) {
-            details.push({ field: 'ownerUserId', messageId: 'E-202' });
-        }
-        if (details.length > 0) validationError(details);
-    };
-
     // Shared by R-05, R-06 and R-07.
-    function saveContent(actor, record, input, mode) {
-        assertUnchanged(record, input);
-        const details = validateRecordInput(input, mode, roundOf(record));
-        if (details.length > 0) validationError(details);
-        record.conductedOn = input.conductedOn ?? null;
-        record.activityTypes = input.activityTypes;
-        record.sections = pickSections(input.sections, input.activityTypes);
+    function saveContent(actor, record, input, mode, parseRecordContent) {
+        checkRecordImmutableIds(record, input);
+        const content = parseRecordContent(input, mode, roundOf(record)?.stage);
+        Object.assign(record, content);
         record.lastEditedByUserId = actor.userId;
         addHistory(record.recordId, actor.userId);
         store.touchCompany(record.companyId);
@@ -98,13 +86,15 @@ function recordsRoutes(store) {
     }
 
     // R-01 POST /api/activity-records  body: ActivityRecordInput + mode
-    router.post('/activity-records', (req, res) => {
+    router.post('/activity-records', async (req, res) => {
+        const parseRecordContent = await loadRecordContentParser();
         const actor = req.actor;
         const body = req.body ?? {};
-        if (actor.role === 'instructor') fail(403, 'FORBIDDEN');
         if (body.mode !== 'draft' && body.mode !== 'complete') {
             validationError([{ field: 'mode', messageId: 'E-202' }]);
         }
+
+        if (actor.role === 'instructor') fail(403, 'FORBIDDEN');
 
         // Owner: students only themselves; admins must name an existing student.
         let ownerUserId = actor.userId;
@@ -113,17 +103,17 @@ function recordsRoutes(store) {
                 fail(403, 'FORBIDDEN');
             }
         } else {
-            if (!body.ownerUserId) validationError([{ field: 'ownerUserId', messageId: 'E-201' }]);
-            const owner = store.getUser(body.ownerUserId);
+            if (typeof body.ownerUserId !== 'string' || !body.ownerUserId) {
+                validationError([{ field: 'ownerUserId', messageId: 'E-201' }]);
+            }
+            const owner =
+                parseId(body.ownerUserId) === null ? null : store.getUser(body.ownerUserId);
             if (!owner || owner.role !== 'student') fail(404, 'NOT_FOUND');
             ownerUserId = owner.userId;
         }
 
-        if (!body.companyId) validationError([{ field: 'companyId', messageId: 'E-201' }]);
+        checkRecordCreateIds(body);
         const company = store.getCompany(body.companyId) ?? fail(404, 'NOT_FOUND');
-        if (!body.applicationRoundId) {
-            validationError([{ field: 'applicationRoundId', messageId: 'E-214' }]);
-        }
         const round =
             store.rounds.find((r) => r.applicationRoundId === body.applicationRoundId) ??
             fail(404, 'NOT_FOUND');
@@ -131,8 +121,7 @@ function recordsRoutes(store) {
             fail(403, 'FORBIDDEN');
         }
 
-        const details = validateRecordInput(body, body.mode, round);
-        if (details.length > 0) validationError(details);
+        const content = parseRecordContent(body, body.mode, round.stage);
 
         store.assertCooldown(actor.userId, 'record'); // 429, separate from rounds
 
@@ -143,10 +132,8 @@ function recordsRoutes(store) {
             ownerUserId,
             createdByUserId: actor.userId,
             lastEditedByUserId: actor.userId,
-            conductedOn: body.conductedOn ?? null,
-            activityTypes: body.activityTypes,
+            ...content,
             status: body.mode === 'complete' ? 'completed' : 'draft',
-            sections: pickSections(body.sections, body.activityTypes),
         };
         store.records.push(record);
         addHistory(record.recordId, actor.userId);
@@ -189,30 +176,33 @@ function recordsRoutes(store) {
     });
 
     // R-05 PUT /api/activity-records/:id/draft
-    router.put('/activity-records/:id/draft', (req, res) => {
+    router.put('/activity-records/:id/draft', async (req, res) => {
+        const parseRecordContent = await loadRecordContentParser();
         const record = findOr404(req.params.id);
         assertCanEdit(req.actor, record);
         if (record.status !== 'draft') fail(409, 'CONFLICT');
-        saveContent(req.actor, record, req.body ?? {}, 'draft');
+        saveContent(req.actor, record, req.body ?? {}, 'draft', parseRecordContent);
         ok(res, record);
     });
 
     // R-06 POST /api/activity-records/:id/complete
-    router.post('/activity-records/:id/complete', (req, res) => {
+    router.post('/activity-records/:id/complete', async (req, res) => {
+        const parseRecordContent = await loadRecordContentParser();
         const record = findOr404(req.params.id);
         assertCanEdit(req.actor, record);
         if (record.status !== 'draft') fail(409, 'CONFLICT');
-        saveContent(req.actor, record, req.body ?? {}, 'complete');
+        saveContent(req.actor, record, req.body ?? {}, 'complete', parseRecordContent);
         record.status = 'completed';
         ok(res, record);
     });
 
     // R-07 PUT /api/activity-records/:id (completed records only; the status never changes)
-    router.put('/activity-records/:id', (req, res) => {
+    router.put('/activity-records/:id', async (req, res) => {
+        const parseRecordContent = await loadRecordContentParser();
         const record = findOr404(req.params.id);
         assertCanEdit(req.actor, record);
         if (record.status !== 'completed') fail(409, 'CONFLICT');
-        saveContent(req.actor, record, req.body ?? {}, 'complete');
+        saveContent(req.actor, record, req.body ?? {}, 'complete', parseRecordContent);
         ok(res, record);
     });
 
