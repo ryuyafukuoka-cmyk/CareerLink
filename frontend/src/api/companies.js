@@ -33,3 +33,8 @@ export function getDeletionImpact(companyId) {
 export function deleteCompany(companyId, { confirmName, expectedDeletionVersion }) {
     return api.delete(`/companies/${companyId}`, { confirmName, expectedDeletionVersion });
 }
+
+// C-07 GET /api/company-options?keyword= -> [{ companyId, nameOfficial }] (for selects)
+export function listCompanyOptions(keyword) {
+    return api.get('/company-options', { query: { keyword } });
+}

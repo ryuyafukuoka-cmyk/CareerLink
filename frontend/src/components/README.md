@@ -34,5 +34,6 @@ Input components take the native props (`value`, `onChange`, `disabled`, `name`,
 | `AppLayout`       | none                                                                                                                                                              | Layout route: header, side menu and `<Outlet />`. Wired in `routes/AppRoutes.jsx`                                      |
 | `DevRoleSwitcher` | none                                                                                                                                                              | Dev only (mock login). Deleted on 12/21                                                                                |
 
-Helpers: `utils/classNames.js` (`classNames`), `utils/pagination.js` (`getPageItems`).
+Helpers: `utils/classNames.js` (`classNames`), `utils/pagination.js` (`getPageItems`), `utils/date.js` (`isRealDate`, `formatDateTime`).
+Hooks: `hooks/useSubmitLock.js` (`run`, `submitting`: blocks double sends), `hooks/useRetryAfter.js` (`start(seconds)`, `secondsLeft`: 429 countdown, text E-009).
 Shared control look: `styles/controls.css` (`.form-control`).

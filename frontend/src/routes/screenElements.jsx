@@ -7,6 +7,10 @@ import CompanyDetailScreen from '@/screens/companies/CompanyDetailScreen.jsx';
 import CompanyFormScreen from '@/screens/companies/CompanyFormScreen.jsx';
 import CompanyListScreen from '@/screens/companies/CompanyListScreen.jsx';
 import HomeScreen from '@/screens/home/HomeScreen.jsx';
+import ApplicationRoundDetailScreen from '@/screens/rounds/ApplicationRoundDetailScreen.jsx';
+import ApplicationRoundListScreen from '@/screens/rounds/ApplicationRoundListScreen.jsx';
+import RoundCreateScreen from '@/screens/rounds/RoundCreateScreen.jsx';
+import RoundEditScreen from '@/screens/rounds/RoundEditScreen.jsx';
 import FirstRegistrationScreen from '@/screens/users/FirstRegistrationScreen.jsx';
 import { PATHS } from './paths.js';
 
@@ -19,4 +23,8 @@ export const SCREEN_ELEMENTS = {
     [PATHS.companyNew]: <CompanyFormScreen />,
     [PATHS.companyEdit]: <CompanyFormScreen />,
     [PATHS.companyDetail]: <CompanyDetailScreen />,
+    [PATHS.rounds]: <ApplicationRoundListScreen />,
+    [PATHS.roundNew]: <RoundCreateScreen />,
+    [PATHS.roundEdit]: <RoundEditScreen />,
+    [PATHS.roundDetail]: <ApplicationRoundDetailScreen />,
 };

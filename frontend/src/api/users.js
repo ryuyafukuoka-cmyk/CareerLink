@@ -6,3 +6,9 @@ import { api } from './client.js';
 export function registerGraduationYear(year) {
     return api.post('/users/me/graduation-year', { year });
 }
+
+// U-03 GET /api/users -> User[] (instructors and admins only)
+// filter: { role?, status?, graduationYear? }
+export function listUsers(filter = {}) {
+    return api.get('/users', { query: filter });
+}
