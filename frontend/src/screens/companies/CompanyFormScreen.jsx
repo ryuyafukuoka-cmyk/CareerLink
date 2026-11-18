@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, generatePath, useNavigate, useParams } from 'react-router-dom';
+import { Link, generatePath, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { createCompany, getCompany, updateCompany } from '@/api/companies.js';
 import Button from '@/components/Button/Button.jsx';
 import Checkbox from '@/components/Checkbox/Checkbox.jsx';
@@ -28,6 +28,7 @@ function toMessage(field, messageId) {
 // The form itself. `company` is the company being edited, or null for a new one.
 function CompanyForm({ company }) {
     const navigate = useNavigate();
+    const { state: locationState } = useLocation();
     const isEdit = company !== null;
     const [values, setValues] = useState({
         nameOfficial: company?.nameOfficial ?? '',
@@ -87,6 +88,14 @@ function CompanyForm({ company }) {
             const saved = isEdit
                 ? await updateCompany(company.companyId, input)
                 : await createCompany(input);
+            // Opened from the record form: go back to it with the new company selected.
+            if (!isEdit && locationState?.returnTo) {
+                navigate(locationState.returnTo, {
+                    replace: true,
+                    state: { ...locationState.returnState, newCompanyId: saved.companyId },
+                });
+                return;
+            }
             navigate(generatePath(PATHS.companyDetail, { companyId: saved.companyId }), {
                 replace: true,
                 state: { noticeId: isEdit ? 'S-102' : 'S-101' },
@@ -104,9 +113,9 @@ function CompanyForm({ company }) {
         }
     }
 
-    const cancelPath = isEdit
-        ? generatePath(PATHS.companyDetail, { companyId: company.companyId })
-        : PATHS.companies;
+    let cancelPath = PATHS.companies;
+    if (isEdit) cancelPath = generatePath(PATHS.companyDetail, { companyId: company.companyId });
+    else if (locationState?.returnTo) cancelPath = locationState.returnTo;
 
     return (
         <form ref={formRef} className="company-form__card" onSubmit={handleSubmit} noValidate>
