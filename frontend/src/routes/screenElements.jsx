@@ -1,6 +1,10 @@
 // Real screens, keyed by route path. A screen not listed here shows PlaceholderPage.
 // Add one line per screen when it is built. (screenRoutes.js stays plain JS: only data.)
 
+import UserDetailScreen from '@/screens/admin/UserDetailScreen.jsx';
+import UserGraduationYearScreen from '@/screens/admin/UserGraduationYearScreen.jsx';
+import UserListScreen from '@/screens/admin/UserListScreen.jsx';
+import UserRoleScreen from '@/screens/admin/UserRoleScreen.jsx';
 import LoginErrorScreen from '@/screens/auth/LoginErrorScreen.jsx';
 import LoginScreen from '@/screens/auth/LoginScreen.jsx';
 import CompanyDetailScreen from '@/screens/companies/CompanyDetailScreen.jsx';
@@ -14,6 +18,8 @@ import ApplicationRoundDetailScreen from '@/screens/rounds/ApplicationRoundDetai
 import ApplicationRoundListScreen from '@/screens/rounds/ApplicationRoundListScreen.jsx';
 import RoundCreateScreen from '@/screens/rounds/RoundCreateScreen.jsx';
 import RoundEditScreen from '@/screens/rounds/RoundEditScreen.jsx';
+import RecordSearchConditionScreen from '@/screens/search/RecordSearchConditionScreen.jsx';
+import RecordSearchResultScreen from '@/screens/search/RecordSearchResultScreen.jsx';
 import FirstRegistrationScreen from '@/screens/users/FirstRegistrationScreen.jsx';
 import { PATHS } from './paths.js';
 
@@ -30,7 +36,13 @@ export const SCREEN_ELEMENTS = {
     [PATHS.recordNew]: <ActivityRecordFormScreen />,
     [PATHS.recordEdit]: <ActivityRecordFormScreen />,
     [PATHS.recordDetail]: <RecordDetailScreen />,
+    [PATHS.search]: <RecordSearchConditionScreen />,
+    [PATHS.searchResults]: <RecordSearchResultScreen />,
     [PATHS.searchRecordDetail]: <RecordDetailScreen />,
+    [PATHS.adminUsers]: <UserListScreen />,
+    [PATHS.adminUserDetail]: <UserDetailScreen />,
+    [PATHS.adminUserGraduationYear]: <UserGraduationYearScreen />,
+    [PATHS.adminUserRole]: <UserRoleScreen />,
     [PATHS.rounds]: <ApplicationRoundListScreen />,
     [PATHS.roundNew]: <RoundCreateScreen />,
     [PATHS.roundEdit]: <RoundEditScreen />,

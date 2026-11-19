@@ -40,6 +40,9 @@ export const messages = {
     'E-215': '応募日を入力してください。「未応募・検討中」以外の選考段階では必須です。',
     'E-216':
         '質問カテゴリが未設定の面接質問があるため、選考段階を変更できません。先にカテゴリを設定してください。',
+    // Not in the design doc yet (provisional): the last active admin cannot lose the admin role (U-06, 409).
+    'E-217':
+        '管理者が0名になるため、ロールを変更できません。別の管理者がいることを確認してください。',
 
     // C: confirmations
     'C-001':

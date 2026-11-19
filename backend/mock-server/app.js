@@ -7,6 +7,9 @@ const { companiesRoutes } = require('./routes/companies');
 const { recordsRoutes } = require('./routes/records');
 const { roundsRoutes } = require('./routes/rounds');
 const { usersRoutes } = require('./routes/users');
+const { searchRoutes } = require('./routes/search');
+const { karteRoutes } = require('./routes/karte');
+const { logsRoutes } = require('./routes/logs');
 
 function createApp(store) {
     const app = express();
@@ -23,6 +26,9 @@ function createApp(store) {
     api.use(roundsRoutes(store));
     api.use(recordsRoutes(store));
     api.use(usersRoutes(store));
+    api.use(searchRoutes(store));
+    api.use(karteRoutes(store));
+    api.use(logsRoutes(store));
     app.use('/api', api);
 
     app.use(() => fail(404, 'NOT_FOUND'));
