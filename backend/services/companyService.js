@@ -10,6 +10,7 @@ const {
 const { requireRole } = require('../authorization/guards');
 const { withTransaction } = require('../db/pool');
 const companyRepository = require('../repositories/companyRepository');
+const { recordOperationLog } = require('../repositories/operationLogRepository');
 
 // The repository's locked read also carries deletionVersion; the API `Company` does not.
 function toCompany({ deletionVersion, ...company }) {
@@ -20,6 +21,27 @@ function parseCompanyId(param) {
     const id = parseId(param);
     if (id === null) throw notFound();
     return id;
+}
+
+async function withCompanyLog(actor, operationType, param, run) {
+    const id = parseId(param);
+    const entry = {
+        operatorUserId: actor.userId,
+        operationType,
+        targetType: 'company',
+        targetId: id !== null && id <= 0xffffffff ? id : null,
+    };
+
+    try {
+        return await run(entry);
+    } catch (error) {
+        try {
+            await recordOperationLog({ ...entry, result: 'failure' });
+        } catch {
+            console.error('Failed to save company failure log:', operationType);
+        }
+        throw error;
+    }
 }
 
 // C-01 listCompanies: any signed-in role. Keyword AND regions (OR), 10 per page.
@@ -49,26 +71,34 @@ async function getCompany(param) {
 
 // C-02 createCompany: every role may register (F-006 権限). Creator = the authenticated actor.
 async function createCompany(actor, body) {
-    const input = parseCompanyInput(body);
-    return withTransaction(async (conn) => {
-        const id = await companyRepository.insert(conn, input, Number(actor.userId));
-        return toCompany(await companyRepository.findById(id, conn));
+    return withCompanyLog(actor, 'createCompany', null, async (entry) => {
+        const input = parseCompanyInput(body);
+
+        return withTransaction(async (conn) => {
+            const id = await companyRepository.insert(conn, input, Number(actor.userId));
+            await recordOperationLog({ ...entry, targetId: id, result: 'success' }, conn);
+            return toCompany(await companyRepository.findById(id, conn));
+        });
     });
 }
 
 // C-04 updateCompany: every role may edit. The row lock + version bump make a pending delete
 // confirmation stale (409), so a delete never removes data nobody has seen.
 async function updateCompany(actor, param, body) {
-    const id = parseCompanyId(param);
-    const input = parseCompanyInput(body);
-    return withTransaction(async (conn) => {
-        const current = await companyRepository.findById(id, conn, { forUpdate: true });
-        if (!current) throw notFound();
-        await companyRepository.update(conn, id, input, Number(actor.userId));
-        return toCompany(await companyRepository.findById(id, conn));
+    return withCompanyLog(actor, 'updateCompany', param, async (entry) => {
+        const id = parseCompanyId(param);
+        const input = parseCompanyInput(body);
+
+        return withTransaction(async (conn) => {
+            const current = await companyRepository.findById(id, conn, { forUpdate: true });
+            if (!current) throw notFound();
+
+            await companyRepository.update(conn, id, input, Number(actor.userId));
+            await recordOperationLog({ ...entry, result: 'success' }, conn);
+            return toCompany(await companyRepository.findById(id, conn));
+        });
     });
 }
-
 // C-05 getDeletionImpact: admin only. Counts and version from one statement.
 async function getDeletionImpact(actor, param) {
     requireRole(actor, [ROLES.ADMIN]);
@@ -81,33 +111,38 @@ async function getDeletionImpact(actor, param) {
 // row -> missing (404) -> name mismatch (400 E-212) -> version mismatch (409) -> delete everything.
 // Any failure rolls the whole transaction back.
 async function deleteCompany(actor, param, body) {
-    requireRole(actor, [ROLES.ADMIN]);
-    const id = parseCompanyId(param);
+    return withCompanyLog(actor, 'deleteCompany', param, async (entry) => {
+        requireRole(actor, [ROLES.ADMIN]);
+        const id = parseCompanyId(param);
 
-    const { confirmName, expectedDeletionVersion } = body ?? {};
-    const details = [];
-    if (typeof confirmName !== 'string' || confirmName === '') {
-        details.push({ field: 'confirmName', messageId: 'E-212' });
-    }
-    // The version is a decimal string (API設計: BIGINT is exposed as a string).
-    if (
-        typeof expectedDeletionVersion !== 'string' ||
-        !/^\d{1,20}$/.test(expectedDeletionVersion)
-    ) {
-        details.push({ field: 'expectedDeletionVersion', messageId: 'E-202' });
-    }
-    if (details.length > 0) throw validationError(details);
+        const { confirmName, expectedDeletionVersion } = body ?? {};
+        const details = [];
 
-    await withTransaction(async (conn) => {
-        const company = await companyRepository.findById(id, conn, { forUpdate: true });
-        if (!company) throw notFound();
-        if (confirmName !== company.nameOfficial) {
-            throw validationError([{ field: 'confirmName', messageId: 'E-212' }]);
+        if (typeof confirmName !== 'string' || confirmName === '') {
+            details.push({ field: 'confirmName', messageId: 'E-212' });
         }
-        if (expectedDeletionVersion !== company.deletionVersion) throw conflict();
-        await companyRepository.deleteWithRelations(conn, id);
+        if (
+            typeof expectedDeletionVersion !== 'string' ||
+            !/^\d{1,20}$/.test(expectedDeletionVersion)
+        ) {
+            details.push({ field: 'expectedDeletionVersion', messageId: 'E-202' });
+        }
+        if (details.length > 0) throw validationError(details);
+
+        await withTransaction(async (conn) => {
+            const company = await companyRepository.findById(id, conn, { forUpdate: true });
+            if (!company) throw notFound();
+            if (confirmName !== company.nameOfficial) {
+                throw validationError([{ field: 'confirmName', messageId: 'E-212' }]);
+            }
+            if (expectedDeletionVersion !== company.deletionVersion) throw conflict();
+
+            await companyRepository.deleteWithRelations(conn, id);
+            await recordOperationLog({ ...entry, result: 'success' }, conn);
+        });
+
+        return null;
     });
-    return null;
 }
 
 module.exports = {
