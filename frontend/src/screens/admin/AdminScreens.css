@@ -80,3 +80,25 @@
 .admin-screen__muted {
     color: var(--color-text-muted);
 }
+
+.admin-screen__steps {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    max-width: var(--form-max-width);
+    padding-left: var(--space-5);
+}
+
+.admin-screen__steps li {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.admin-screen__steps h2 {
+    font-size: var(--font-size-md);
+}

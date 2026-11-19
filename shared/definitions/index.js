@@ -7,3 +7,4 @@ export * from './stages.js';
 export * from './questionCategories.js';
 export * from './regions.js';
 export * from './sections.js';
+export * from './operationLogs.js';

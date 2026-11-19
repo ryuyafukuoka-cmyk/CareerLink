@@ -1,6 +1,9 @@
 // Real screens, keyed by route path. A screen not listed here shows PlaceholderPage.
 // Add one line per screen when it is built. (screenRoutes.js stays plain JS: only data.)
 
+import DraftCleanupScreen from '@/screens/admin/DraftCleanupScreen.jsx';
+import OperationLogScreen from '@/screens/admin/OperationLogScreen.jsx';
+import OperationsScreen from '@/screens/admin/OperationsScreen.jsx';
 import UserDetailScreen from '@/screens/admin/UserDetailScreen.jsx';
 import UserGraduationYearScreen from '@/screens/admin/UserGraduationYearScreen.jsx';
 import UserListScreen from '@/screens/admin/UserListScreen.jsx';
@@ -43,6 +46,9 @@ export const SCREEN_ELEMENTS = {
     [PATHS.adminUserDetail]: <UserDetailScreen />,
     [PATHS.adminUserGraduationYear]: <UserGraduationYearScreen />,
     [PATHS.adminUserRole]: <UserRoleScreen />,
+    [PATHS.adminOperations]: <OperationsScreen />,
+    [PATHS.adminLogs]: <OperationLogScreen />,
+    [PATHS.adminDraftCleanup]: <DraftCleanupScreen />,
     [PATHS.rounds]: <ApplicationRoundListScreen />,
     [PATHS.roundNew]: <RoundCreateScreen />,
     [PATHS.roundEdit]: <RoundEditScreen />,

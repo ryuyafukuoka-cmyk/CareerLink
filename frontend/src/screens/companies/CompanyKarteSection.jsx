@@ -32,7 +32,7 @@ function RecordsView({ years }) {
                 {group.records.map((record) => (
                     <li key={record.recordId} className="company-karte__item">
                         <Link to={recordPath(record.recordId)}>
-                            {displayDate(record.conductedOn)}　{typesText(record.activityTypes)}
+                            {displayDate(record.conductedOn)} {typesText(record.activityTypes)}
                         </Link>
                         {record.posterName && (
                             <span className="company-karte__meta">投稿者：{record.posterName}</span>

@@ -63,12 +63,7 @@ export const SCREENS = [
 
     { screenId: 'SC-06-01', name: 'ユーザ一覧', path: PATHS.adminUsers, access: STAFF },
     { screenId: 'SC-06-02', name: 'ユーザ詳細・管理', path: PATHS.adminUserDetail, access: STAFF },
-    {
-        screenId: 'SC-06-03',
-        name: '運用・データ管理',
-        path: PATHS.adminOperations,
-        access: STAFF,
-    },
+    { screenId: 'SC-06-03', name: '運用・データ管理', path: PATHS.adminOperations, access: STAFF },
     { screenId: 'SC-06-04', name: '操作履歴', path: PATHS.adminLogs, access: STAFF },
     {
         screenId: 'SC-06-05',
