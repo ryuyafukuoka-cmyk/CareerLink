@@ -1,0 +1,141 @@
+@media (prefers-color-scheme: light) {
+    :root {
+        --text-50: #f0f5f2;
+        --text-100: #e0ebe4;
+        --text-200: #c2d6ca;
+        --text-300: #a3c2af;
+        --text-400: #85ad95;
+        --text-500: #66997a;
+        --text-600: #527a62;
+        --text-700: #3d5c49;
+        --text-800: #293d31;
+        --text-900: #141f18;
+        --text-950: #0a0f0c;
+
+        --background-50: #fcffe5;
+        --background-100: #faffcc;
+        --background-200: #f5ff99;
+        --background-300: #f0ff66;
+        --background-400: #ebff33;
+        --background-500: #e6ff00;
+        --background-600: #b8cc00;
+        --background-700: #8a9900;
+        --background-800: #5c6600;
+        --background-900: #2e3300;
+        --background-950: #171a00;
+
+        --primary-50: #e6fff2;
+        --primary-100: #ccffe6;
+        --primary-200: #9afecc;
+        --primary-300: #67feb3;
+        --primary-400: #34fe99;
+        --primary-500: #01fe80;
+        --primary-600: #01cb66;
+        --primary-700: #01984d;
+        --primary-800: #016533;
+        --primary-900: #00331a;
+        --primary-950: #00190d;
+
+        --secondary-50: #ebf9f2;
+        --secondary-100: #d7f4e6;
+        --secondary-200: #b0e8cc;
+        --secondary-300: #88ddb3;
+        --secondary-400: #61d199;
+        --secondary-500: #39c680;
+        --secondary-600: #2e9e66;
+        --secondary-700: #22774d;
+        --secondary-800: #174f33;
+        --secondary-900: #0b281a;
+        --secondary-950: #06140d;
+
+        --accent-50: #e9fbf2;
+        --accent-100: #d4f7e6;
+        --accent-200: #a9efcc;
+        --accent-300: #7ee7b3;
+        --accent-400: #53df99;
+        --accent-500: #28d780;
+        --accent-600: #20ac66;
+        --accent-700: #18814d;
+        --accent-800: #105633;
+        --accent-900: #082b1a;
+        --accent-950: #04160d;
+    }
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text-50: #0a0f0c;
+        --text-100: #141f18;
+        --text-200: #293d31;
+        --text-300: #3d5c49;
+        --text-400: #527a62;
+        --text-500: #66997a;
+        --text-600: #85ad95;
+        --text-700: #a3c2af;
+        --text-800: #c2d6ca;
+        --text-900: #e0ebe4;
+        --text-950: #f0f5f2;
+
+        --background-50: #171a00;
+        --background-100: #2e3300;
+        --background-200: #5c6600;
+        --background-300: #8a9900;
+        --background-400: #b8cc00;
+        --background-500: #e6ff00;
+        --background-600: #ebff33;
+        --background-700: #f0ff66;
+        --background-800: #f5ff99;
+        --background-900: #faffcc;
+        --background-950: #fcffe5;
+
+        --primary-50: #00190d;
+        --primary-100: #00331a;
+        --primary-200: #016533;
+        --primary-300: #01984d;
+        --primary-400: #01cb66;
+        --primary-500: #01fe80;
+        --primary-600: #34fe99;
+        --primary-700: #67feb3;
+        --primary-800: #9afecc;
+        --primary-900: #ccffe6;
+        --primary-950: #e6fff2;
+
+        --secondary-50: #06140d;
+        --secondary-100: #0b281a;
+        --secondary-200: #174f33;
+        --secondary-300: #22774d;
+        --secondary-400: #2e9e66;
+        --secondary-500: #39c680;
+        --secondary-600: #61d199;
+        --secondary-700: #88ddb3;
+        --secondary-800: #b0e8cc;
+        --secondary-900: #d7f4e6;
+        --secondary-950: #ebf9f2;
+
+        --accent-50: #04160d;
+        --accent-100: #082b1a;
+        --accent-200: #105633;
+        --accent-300: #18814d;
+        --accent-400: #20ac66;
+        --accent-500: #28d780;
+        --accent-600: #53df99;
+        --accent-700: #7ee7b3;
+        --accent-800: #a9efcc;
+        --accent-900: #d4f7e6;
+        --accent-950: #e9fbf2;
+    }
+}
+
+:root[data-theme='light'] {
+    --text: #0a0f0c;
+    --background: #fefff5;
+    --primary: #01b75c;
+    --secondary: #7dd9ab;
+    --accent: #53df99;
+}
+:root[data-theme='dark'] {
+    --text: #f0f5f2;
+    --background: #090a00;
+    --primary: #48fea3;
+    --secondary: #268254;
+    --accent: #20ac66;
+}
