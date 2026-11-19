@@ -59,7 +59,8 @@ function RecordDetailScreen() {
         };
     }, [recordId, requestKey]);
 
-    const backPath = fromSearch ? PATHS.searchResults : PATHS.records;
+    // From search: go back to the same results (conditions and page) when the link passed them.
+    const backPath = fromSearch ? (state?.backTo ?? PATHS.searchResults) : PATHS.records;
     const backLabel = fromSearch ? '← 検索結果' : '← 活動記録一覧';
 
     if (result.key !== requestKey) return <Loading centered />;

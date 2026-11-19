@@ -10,12 +10,13 @@ import Notice from '@/components/Notice/Notice.jsx';
 import { getMessage } from '@/messages';
 import { PATHS } from '@/routes/paths.js';
 import CompanyDeleteDialog from './CompanyDeleteDialog.jsx';
+import CompanyKarteSection from './CompanyKarteSection.jsx';
 import './CompanyDetailScreen.css';
 
 const isHttpUrl = (url) => /^https?:\/\//i.test(url);
 
 // SC-04-02 Company detail (company karte). Shows the company's current information.
-// The past activity records part (karte) is added in Week 5.
+// Below it, CompanyKarteSection shows the past completed records (K-01 to K-03).
 function CompanyDetailScreen() {
     const { companyId } = useParams();
     const { role } = useAuth();
@@ -100,7 +101,7 @@ function CompanyDetailScreen() {
 
             <section className="company-detail__section" aria-labelledby="company-karte-heading">
                 <h2 id="company-karte-heading">過去の活動記録（企業別カルテ）</h2>
-                <p className="company-detail__placeholder">この部分は準備中です。</p>
+                <CompanyKarteSection companyId={companyId} />
             </section>
 
             {deleteOpen && (

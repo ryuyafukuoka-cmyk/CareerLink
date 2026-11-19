@@ -1,0 +1,67 @@
+.company-karte {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.company-karte__filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+}
+
+.company-karte__tabs {
+    display: flex;
+    gap: var(--space-2);
+    border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.company-karte__tab {
+    padding: var(--space-2) var(--space-4);
+    font: inherit;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    background: none;
+    border: 0;
+    border-bottom: 3px solid transparent;
+}
+
+.company-karte__tab--current {
+    font-weight: bold;
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
+
+.company-karte__note,
+.company-karte__meta {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.company-karte__year {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.company-karte__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: 0;
+    list-style: none;
+}
+
+.company-karte__item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.company-karte__followups {
+    padding-left: var(--space-4);
+}
