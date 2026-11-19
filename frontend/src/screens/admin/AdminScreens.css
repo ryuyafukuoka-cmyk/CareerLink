@@ -1,0 +1,104 @@
+.admin-screen {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    max-width: var(--content-max-width);
+    margin: 0 auto;
+    padding: var(--space-5);
+}
+
+.admin-screen__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+}
+
+.admin-screen__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.admin-screen__panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    max-width: var(--form-max-width);
+    padding: var(--space-4);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.admin-screen__filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-4);
+}
+
+.admin-screen__info {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: var(--space-2) var(--space-5);
+}
+
+.admin-screen__info dt {
+    color: var(--color-text-muted);
+}
+
+.admin-screen__table-wrap {
+    overflow-x: auto;
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.admin-screen__table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-screen__table th,
+.admin-screen__table td {
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
+    vertical-align: top;
+    border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.admin-screen__table th {
+    font-size: var(--font-size-sm);
+    background: var(--color-surface-alt);
+}
+
+.admin-screen__table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.admin-screen__muted {
+    color: var(--color-text-muted);
+}
+
+.admin-screen__steps {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    max-width: var(--form-max-width);
+    padding-left: var(--space-5);
+}
+
+.admin-screen__steps li {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.admin-screen__steps h2 {
+    font-size: var(--font-size-md);
+}

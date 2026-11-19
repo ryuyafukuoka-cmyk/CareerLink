@@ -1,0 +1,77 @@
+.record-search {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    max-width: var(--content-max-width);
+    margin: 0 auto;
+    padding: var(--space-5);
+}
+
+.record-search__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-4);
+}
+
+.record-search__lead,
+.record-search__count {
+    color: var(--color-text-muted);
+}
+
+.record-search__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    max-width: var(--form-max-width);
+    padding: var(--space-4);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.record-search__checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+}
+
+.record-search__dates {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: var(--space-4);
+}
+
+.record-search__actions {
+    display: flex;
+    gap: var(--space-3);
+}
+
+.record-search__table-wrap {
+    overflow-x: auto;
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.record-search__table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.record-search__table th,
+.record-search__table td {
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
+    vertical-align: top;
+    border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.record-search__table th {
+    font-size: var(--font-size-sm);
+    background: var(--color-surface-alt);
+}
+
+.record-search__table tbody tr:last-child td {
+    border-bottom: 0;
+}

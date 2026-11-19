@@ -1,0 +1,114 @@
+.round-screen {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    max-width: var(--content-max-width);
+    margin: 0 auto;
+    padding: var(--space-5);
+}
+
+.round-screen__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+}
+
+.round-screen__filter {
+    max-width: var(--form-max-width);
+    padding: var(--space-4);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.round-screen__group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.round-screen__table-wrap {
+    overflow-x: auto;
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.round-screen__table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.round-screen__table th,
+.round-screen__table td {
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
+    vertical-align: top;
+    border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.round-screen__table th {
+    font-size: var(--font-size-sm);
+    background: var(--color-surface-alt);
+}
+
+.round-screen__table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.round-screen__links {
+    display: flex;
+    gap: var(--space-4);
+}
+
+.round-screen--form {
+    max-width: var(--form-max-width);
+}
+
+.round-screen__card {
+    padding: var(--space-5);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.round-screen__hint {
+    margin: var(--space-2) 0 var(--space-4);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.round-screen__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-4);
+    margin-top: var(--space-5);
+}
+
+.round-screen__info {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: var(--space-2) var(--space-5);
+    padding: var(--space-4);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.round-screen__info dt {
+    color: var(--color-text-muted);
+}
+
+.round-screen__info dd {
+    margin: 0;
+}
+
+.round-screen__note {
+    white-space: pre-wrap;
+}
+
+.round-screen__history {
+    padding-left: var(--space-5);
+}

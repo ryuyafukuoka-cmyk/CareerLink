@@ -1,0 +1,3 @@
+Frontend: Week 3 (company and round screens) is written; Week 4 has the mock records API, shared getSectionDefinitions, the SC-02-03 record form (create and edit), the record list (SC-02-01) and the record detail (SC-02-02, also used for SC-03-03) with the C-002 delete dialog and edit / delete buttons per role (untested, not committed).
+Next: Week 4 review (role walkthrough for records, lint / format check, PR), then Week 5 search / karte / admin.
+Frontend: Week 5 12/11 screens written: SC-06-04 operation log, SC-06-03 operations guidance, SC-06-07 draft cleanup (untested, not committed). Next: Week 5 review (lint / format check, PR), then Week 6 integration.

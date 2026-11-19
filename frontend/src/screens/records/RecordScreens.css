@@ -1,0 +1,90 @@
+/* Shared by the record list (SC-02-01) and the record detail (SC-02-02). Layout classes come from RoundScreens.css. */
+
+.record-screen__section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.record-screen__badge {
+    display: inline-block;
+    padding: 0 var(--space-2);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-sm);
+}
+
+.record-screen__notice-note {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.record-screen__sections {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.record-view {
+    padding: var(--space-4);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.record-view h3 {
+    margin: 0 0 var(--space-3);
+}
+
+.record-view__fields {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: var(--space-2) var(--space-5);
+    margin: 0;
+}
+
+.record-view__fields dt {
+    color: var(--color-text-muted);
+}
+
+.record-view__fields dd {
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.record-view__questions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.record-view__question {
+    padding: var(--space-3);
+    background: var(--color-surface-alt);
+    border-radius: var(--radius-sm);
+}
+
+.record-view__category {
+    margin: 0 0 var(--space-1);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.record-view__text {
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.record-view__followups {
+    margin: var(--space-2) 0 0;
+    padding-left: var(--space-5);
+}
+
+.record-screen__delete-error {
+    margin: var(--space-3) 0 0;
+}

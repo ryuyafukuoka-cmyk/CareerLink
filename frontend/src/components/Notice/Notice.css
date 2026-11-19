@@ -1,0 +1,14 @@
+.notice {
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-sm);
+}
+
+.notice--success {
+    color: var(--color-success);
+    background: var(--color-success-soft);
+}
+
+.notice--error {
+    color: var(--color-danger);
+    background: var(--color-danger-soft);
+}

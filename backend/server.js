@@ -1,15 +1,10 @@
-// Local development entry point. The Lambda handler will be a separate file.
-const express = require('express');
+// Local development entry point (npm run dev:back). Uses the dev-only header login.
+// The Lambda entry point is lambda.js; this file is never deployed.
+const { createApp } = require('./app');
+const { devAuthenticate } = require('./authorization/devAuthenticate');
 
-const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
-
-app.get('/api/health', (req, res) => {
-    res.json({ data: { status: 'ok' } });
-});
-
-app.listen(PORT, () => {
+createApp({ authenticate: devAuthenticate }).listen(PORT, () => {
     console.log(`CareerLink backend listening on http://localhost:${PORT}`);
 });

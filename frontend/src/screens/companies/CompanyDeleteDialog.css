@@ -1,0 +1,17 @@
+.company-delete__target {
+    margin-bottom: var(--space-3);
+    font-weight: var(--font-weight-bold);
+}
+
+.company-delete__notice {
+    margin-bottom: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    color: var(--color-warning);
+    background: var(--color-warning-soft);
+    border-radius: var(--radius-sm);
+}
+
+.company-delete__warning {
+    color: var(--color-danger);
+    font-weight: var(--font-weight-medium);
+}

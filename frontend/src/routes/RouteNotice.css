@@ -1,0 +1,13 @@
+.route-notice {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+    max-width: var(--form-max-width);
+    margin: var(--space-7) auto;
+    padding: var(--space-5);
+}
+
+.route-notice__link {
+    font-size: var(--font-size-sm);
+}

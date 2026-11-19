@@ -1,0 +1,43 @@
+.region-select__summary {
+    cursor: pointer;
+}
+
+.region-select__panel {
+    margin-top: var(--space-2);
+    padding: var(--space-3);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-sm);
+}
+
+.region-select__group {
+    margin: 0 0 var(--space-3);
+    padding: 0;
+    border: 0;
+}
+
+.region-select__legend {
+    margin-bottom: var(--space-1);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+}
+
+.region-select__options {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+    gap: var(--space-1) var(--space-3);
+}
+
+.region-select__clear {
+    padding: 0;
+    font: inherit;
+    font-size: var(--font-size-sm);
+    color: var(--color-primary);
+    background: none;
+    border: 0;
+    cursor: pointer;
+}
+
+.region-select__clear:hover:not(:disabled) {
+    text-decoration: underline;
+}
