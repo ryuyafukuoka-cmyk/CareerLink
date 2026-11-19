@@ -1,5 +1,5 @@
 // Date helpers. API dates are YYYY/MM/DD, API date-times are ISO 8601 with +09:00 (共通仕様 §2).
-// The DB pool returns DATE / DATETIME as strings (dateStrings: true) in JST.
+// Repositories convert DATETIME from the DB session time zone to JST before formatting.
 
 // A real calendar date written as YYYY/MM/DD (2026/02/30 is rejected).
 function isRealDate(value) {

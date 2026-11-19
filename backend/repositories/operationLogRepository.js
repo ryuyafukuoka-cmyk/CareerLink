@@ -8,7 +8,8 @@ const targetTables = new Map([
     ['user', 'users'],
 ]);
 const targetTypes = new Map(Array.from(targetTables, ([type, table]) => [table, type]));
-const columns = `l.operation_log_id, l.users_id, u.users_name, l.operated_at,
+const columns = `l.operation_log_id, l.users_id, u.users_name,
+    CONVERT_TZ(l.operated_at, @@session.time_zone, '+09:00') AS operatedAt,
     l.operation_type, l.target_table, l.target_id, l.operation_result`;
 const source = ' FROM operation_logs l JOIN users u ON u.users_id = l.users_id';
 
@@ -17,7 +18,7 @@ function toLog(row) {
         logId: String(row.operation_log_id),
         operatorUserId: String(row.users_id),
         operatorName: row.users_name,
-        operatedAt: fromDbDateTime(row.operated_at),
+        operatedAt: fromDbDateTime(row.operatedAt),
         operationType: row.operation_type,
         targetType: targetTypes.get(row.target_table),
         targetId: row.target_id === null ? null : String(row.target_id),
@@ -29,8 +30,8 @@ async function list(filters, page) {
     const conditions = [];
     const values = [];
     for (const [clause, value] of [
-        ['l.operated_at >= ?', filters.start],
-        ['l.operated_at <= ?', filters.end],
+        ["l.operated_at >= CONVERT_TZ(?, '+09:00', @@session.time_zone)", filters.start],
+        ["l.operated_at <= CONVERT_TZ(?, '+09:00', @@session.time_zone)", filters.end],
         ['l.users_id = ?', filters.operatorId],
         ['l.operation_type = ?', filters.operationType],
         ['l.target_table = ?', filters.table],

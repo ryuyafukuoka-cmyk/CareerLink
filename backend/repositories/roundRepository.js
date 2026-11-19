@@ -89,7 +89,7 @@ async function insertHistory(conn, applicationId, userId) {
 // RD-06. Newest first.
 async function listHistory(applicationId, executor) {
     const rows = await query(
-        `SELECT sh.updated_by AS editorId, u.users_name AS editorName, sh.updated_at AS editedAt
+        `SELECT sh.updated_by AS editorId, u.users_name AS editorName, CONVERT_TZ(sh.updated_at, @@session.time_zone, '+09:00') AS editedAt
          FROM selection_history sh
          JOIN users u ON u.users_id = sh.updated_by
          WHERE sh.application_id = ?
@@ -108,7 +108,7 @@ async function listHistory(applicationId, executor) {
 async function listRecords(applicationId, includeDrafts, executor) {
     const rows = await query(
         `SELECT a.activity_id AS id, c.company_name AS companyName,
-                a.activity_date AS conductedOn, a.updated_at AS updatedAt,
+                a.activity_date AS conductedOn, CONVERT_TZ(a.updated_at, @@session.time_zone, '+09:00') AS updatedAt,
                 a.record_status AS status
          FROM activities a
          JOIN applications ap ON ap.application_id = a.application_id

@@ -9,11 +9,19 @@ export function isRealDate(value) {
     return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 }
 
-/** '2026-06-10T19:00:00+09:00' -> '2026/06/10 19:00' (browser time zone). Empty value -> '—'. */
+const jstDateTime = new Intl.DateTimeFormat('ja-JP', {
+    timeZone: 'Asia/Tokyo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+});
+
+/** Format an API timestamp as YYYY/MM/DD HH:mm in Japan Standard Time. */
 export function formatDateTime(iso) {
     if (!iso) return '—';
     const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) return '—';
-    const pad = (n) => String(n).padStart(2, '0');
-    return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    return Number.isNaN(date.getTime()) ? '—' : jstDateTime.format(date);
 }

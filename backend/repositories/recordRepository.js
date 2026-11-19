@@ -33,7 +33,8 @@ async function findById(id, executor, { forUpdate = false } = {}) {
         `SELECT a.activity_id AS id, a.application_id AS roundId, ap.company_id AS companyId,
                 ap.owner_id AS ownerId, a.created_by AS createdBy, a.updated_by AS updatedBy,
                 a.activity_date AS conductedOn, a.record_status AS status,
-                a.created_at AS createdAt, a.updated_at AS updatedAt
+                CONVERT_TZ(a.created_at, @@session.time_zone, '+09:00') AS createdAt,
+                CONVERT_TZ(a.updated_at, @@session.time_zone, '+09:00') AS updatedAt
          FROM activities a
          JOIN applications ap ON ap.application_id = a.application_id
          WHERE a.activity_id = ?${forUpdate ? ' FOR UPDATE' : ''}`,
@@ -285,7 +286,7 @@ async function listSummaries({ ownerId, status } = {}, executor) {
     const clause = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const rows = await query(
         `SELECT a.activity_id AS id, c.company_name AS companyName,
-                a.activity_date AS conductedOn, a.updated_at AS updatedAt,
+                a.activity_date AS conductedOn, CONVERT_TZ(a.updated_at, @@session.time_zone, '+09:00') AS updatedAt,
                 a.record_status AS status
          FROM activities a
          JOIN applications ap ON ap.application_id = a.application_id
@@ -337,7 +338,7 @@ async function findDetailExtras(id, executor) {
     );
     const r = rows[0];
     const history = await query(
-        `SELECT u.users_name AS editorName, h.updated_at AS editedAt
+        `SELECT u.users_name AS editorName, CONVERT_TZ(h.updated_at, @@session.time_zone, '+09:00') AS editedAt
          FROM activity_history h JOIN users u ON u.users_id = h.updated_by
          WHERE h.activity_id = ?
          ORDER BY h.updated_at DESC, h.activity_history_id DESC`,
