@@ -5,6 +5,7 @@ const { isRealDate, toDbDate } = require('../common/dateUtil');
 const { parseId } = require('../common/validation');
 const { requireRole } = require('../authorization/guards');
 const { withTransaction } = require('../db/pool');
+const { recordOperationLog } = require('../repositories/operationLogRepository');
 const roundRepository = require('../repositories/roundRepository');
 const companyRepository = require('../repositories/companyRepository');
 const userRepository = require('../repositories/userRepository');
@@ -26,11 +27,35 @@ async function loadForView(actor, param) {
     return round;
 }
 
+async function logRoundFailure(entry) {
+    try {
+        await recordOperationLog({ ...entry, result: 'failure' });
+    } catch {
+        console.error('Failed to save application round failure log:', entry.operationType);
+    }
+}
+
 // RD-01 createApplicationRound: a student for themself, an admin for any student, never an
 // instructor. Order: body (400) -> role/owner (403) -> student (404) -> company lock (404) ->
 // 30-second limit (429) -> insert. The stage starts at "considering"; nothing is inferred from
 // the date.
 async function createApplicationRound(actor, body) {
+    const entry = {
+        operatorUserId: actor.userId,
+        operationType: 'createApplicationRound',
+        targetType: 'round',
+        targetId: null,
+    };
+
+    try {
+        return await insertApplicationRound(actor, body, entry);
+    } catch (error) {
+        await logRoundFailure(entry);
+        throw error;
+    }
+}
+
+async function insertApplicationRound(actor, body, entry) {
     const input = body !== null && typeof body === 'object' ? body : {};
     const details = [];
     const studentId = typeof input.studentUserId === 'string' ? parseId(input.studentUserId) : null;
@@ -61,6 +86,7 @@ async function createApplicationRound(actor, body) {
         await roundRepository.insertHistory(conn, id, Number(actor.userId));
         await companyRepository.bumpDeletionVersion(conn, companyId);
         await markCreationSucceeded(conn, actor, 'round');
+        await recordOperationLog({ ...entry, targetId: id, result: 'success' }, conn);
         return roundRepository.findById(id, conn);
     });
 }
@@ -102,6 +128,22 @@ async function getApplicationRound(actor, param) {
 // leaving "considering" needs a category on every interview question of the round.
 async function updateApplicationRound(actor, param, body) {
     const id = parseId(param);
+    const entry = {
+        operatorUserId: actor.userId,
+        operationType: 'updateApplicationRound',
+        targetType: 'round',
+        targetId: id !== null && id <= 0xffffffff ? id : null,
+    };
+
+    try {
+        return await updateExistingRound(actor, id, body, entry);
+    } catch (error) {
+        await logRoundFailure(entry);
+        throw error;
+    }
+}
+
+async function updateExistingRound(actor, id, body, entry) {
     if (id === null) throw notFound();
     requireRole(actor, [ROLES.STUDENT, ROLES.ADMIN]);
     const first = await roundRepository.findById(id);
@@ -161,6 +203,7 @@ async function updateApplicationRound(actor, param, body) {
         );
         await roundRepository.insertHistory(conn, id, Number(actor.userId));
         await companyRepository.bumpDeletionVersion(conn, Number(round.companyId));
+        await recordOperationLog({ ...entry, result: 'success' }, conn);
         return roundRepository.findById(id, conn);
     });
 }
