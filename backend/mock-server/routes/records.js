@@ -70,7 +70,7 @@ function recordsRoutes(store) {
     };
 
     // Shared by R-05, R-06 and R-07.
-    function saveContent(actor, record, input, mode, parseRecordContent) {
+    function saveContent(actor, record, input, mode, parseRecordContent, operationType) {
         checkRecordImmutableIds(record, input);
         const content = parseRecordContent(input, mode, roundOf(record)?.stage);
         Object.assign(record, content);
@@ -79,7 +79,7 @@ function recordsRoutes(store) {
         store.touchCompany(record.companyId);
         store.addLog({
             operatorUserId: actor.userId,
-            operationType: 'updateRecord',
+            operationType,
             targetType: 'record',
             targetId: record.recordId,
         });
@@ -141,7 +141,7 @@ function recordsRoutes(store) {
         store.markCreated(actor.userId, 'record');
         store.addLog({
             operatorUserId: actor.userId,
-            operationType: 'createRecord',
+            operationType: 'createActivityRecord',
             targetType: 'record',
             targetId: record.recordId,
         });
@@ -181,7 +181,7 @@ function recordsRoutes(store) {
         const record = findOr404(req.params.id);
         assertCanEdit(req.actor, record);
         if (record.status !== 'draft') fail(409, 'CONFLICT');
-        saveContent(req.actor, record, req.body ?? {}, 'draft', parseRecordContent);
+        saveContent(req.actor, record, req.body ?? {}, 'draft', parseRecordContent, 'saveDraft');
         ok(res, record);
     });
 
@@ -191,7 +191,14 @@ function recordsRoutes(store) {
         const record = findOr404(req.params.id);
         assertCanEdit(req.actor, record);
         if (record.status !== 'draft') fail(409, 'CONFLICT');
-        saveContent(req.actor, record, req.body ?? {}, 'complete', parseRecordContent);
+        saveContent(
+            req.actor,
+            record,
+            req.body ?? {},
+            'complete',
+            parseRecordContent,
+            'completeActivityRecord',
+        );
         record.status = 'completed';
         ok(res, record);
     });
@@ -202,7 +209,14 @@ function recordsRoutes(store) {
         const record = findOr404(req.params.id);
         assertCanEdit(req.actor, record);
         if (record.status !== 'completed') fail(409, 'CONFLICT');
-        saveContent(req.actor, record, req.body ?? {}, 'complete', parseRecordContent);
+        saveContent(
+            req.actor,
+            record,
+            req.body ?? {},
+            'complete',
+            parseRecordContent,
+            'updateActivityRecord',
+        );
         ok(res, record);
     });
 
@@ -224,7 +238,7 @@ function recordsRoutes(store) {
         store.touchCompany(record.companyId);
         store.addLog({
             operatorUserId: actor.userId,
-            operationType: 'deleteRecord',
+            operationType: 'deleteActivityRecord',
             targetType: 'record',
             targetId: record.recordId,
         });
