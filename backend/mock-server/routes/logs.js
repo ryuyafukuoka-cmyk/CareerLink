@@ -13,7 +13,7 @@ function logsRoutes(store) {
     const router = express.Router();
 
     // L-01 GET /api/operation-logs?from=&to=&operatorUserId=&operationType=&targetType=&page=
-    router.get('/operation-logs', (req, res) => {
+    router.get('/operation-logs', async (req, res) => {
         requireRole(req.actor, 'instructor', 'admin');
         const { from, to, operatorUserId, operationType, targetType } = req.query;
         const page = parsePage(req.query.page);
@@ -25,11 +25,13 @@ function logsRoutes(store) {
 
         // operatedAt is ISO 8601 with +09:00, so its first 10 characters are the JST date.
         const dateOf = (log) => log.operatedAt.slice(0, 10).replaceAll('-', '/');
+        const { matchingOperationTypes } = await import('../../common/operationLogTypes.mjs');
+        const types = operationType && matchingOperationTypes(operationType);
         const matched = store.operationLogs
             .filter((l) => !from || dateOf(l) >= from)
             .filter((l) => !to || dateOf(l) <= to)
             .filter((l) => !operatorUserId || l.operatorUserId === operatorUserId)
-            .filter((l) => !operationType || l.operationType === operationType)
+            .filter((l) => !types || types.includes(l.operationType))
             .filter((l) => !targetType || l.targetType === targetType)
             .sort((a, b) => b.operatedAt.localeCompare(a.operatedAt));
 

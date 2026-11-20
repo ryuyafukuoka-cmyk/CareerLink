@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
+    canonicalOperationType,
     LOG_TARGET_TYPE_LABELS,
     LOG_TARGET_TYPE_ORDER,
     OPERATION_RESULT_LABELS,
@@ -53,7 +54,7 @@ function OperationLogScreen() {
         from: searchParams.get('from') ?? '',
         to: searchParams.get('to') ?? '',
         operatorUserId: searchParams.get('operatorUserId') ?? '',
-        operationType: searchParams.get('operationType') ?? '',
+        operationType: canonicalOperationType(searchParams.get('operationType') ?? ''),
         targetType: searchParams.get('targetType') ?? '',
     };
     const pageParam = Number(searchParams.get('page'));
@@ -188,8 +189,9 @@ function OperationLogScreen() {
                                         <td>{formatDateTime(log.operatedAt)}</td>
                                         <td>{log.operatorName || '—'}</td>
                                         <td>
-                                            {OPERATION_TYPE_LABELS[log.operationType] ??
-                                                log.operationType}
+                                            {OPERATION_TYPE_LABELS[
+                                                canonicalOperationType(log.operationType)
+                                            ] ?? log.operationType}
                                         </td>
                                         <td>
                                             {LOG_TARGET_TYPE_LABELS[log.targetType] ??

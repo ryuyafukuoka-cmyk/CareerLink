@@ -70,7 +70,7 @@ function roundsRoutes(store) {
         store.markCreated(actor.userId, 'round');
         store.addLog({
             operatorUserId: actor.userId,
-            operationType: 'createRound',
+            operationType: 'createApplicationRound',
             targetType: 'round',
             targetId: round.applicationRoundId,
         });
@@ -155,7 +155,7 @@ function roundsRoutes(store) {
         store.touchCompany(round.companyId);
         store.addLog({
             operatorUserId: actor.userId,
-            operationType: 'updateRound',
+            operationType: 'updateApplicationRound',
             targetType: 'round',
             targetId: round.applicationRoundId,
         });
