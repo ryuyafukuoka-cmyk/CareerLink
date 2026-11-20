@@ -7,7 +7,8 @@
         "dev": "node --watch server.js",
         "dev:mock": "node --watch mock-server/index.js",
         "start": "node server.js",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "node --test test/regression.test.cjs",
+        "test:db": "node --test test/mariadb.test.cjs"
     },
     "keywords": [],
     "author": "",
