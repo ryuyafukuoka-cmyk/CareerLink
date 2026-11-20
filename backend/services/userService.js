@@ -5,6 +5,7 @@ const { assertGraduationYear, assertOneOf, parseId } = require('../common/valida
 const { requireRole, requireOwnerOrRole } = require('../authorization/guards');
 const { withTransaction } = require('../db/pool');
 const userRepository = require('../repositories/userRepository');
+const { recordOperationLog } = require('../repositories/operationLogRepository');
 
 // registerGraduationYear: a student sets their own graduation year once (U-02).
 // Order: role (403) -> value (400) -> already set (409, decided atomically by the UPDATE).
@@ -65,35 +66,62 @@ async function updateGraduationYear(actor, userIdParam, year) {
     return userRepository.findById(id);
 }
 
-// setUserStatus (U-07): instructor / admin enable or disable a student. Nothing is deleted.
-// Order: role (403) -> value (400) -> self (403) -> missing (404) -> not a student (403).
-async function setUserStatus(actor, userIdParam, status) {
-    requireRole(actor, [ROLES.INSTRUCTOR, ROLES.ADMIN]);
-    assertOneOf(status, USER_STATUS_VALUES, 'status');
+// Log each authenticated attempt, including successful requests that repeat the current value.
+async function withUserChangeLog(actor, userIdParam, operationType, change) {
     const id = parseId(userIdParam);
-    if (id === null) throw notFound();
-    if (String(id) === actor.userId) throw forbidden();
-    const target = await userRepository.findById(id);
-    if (!target) throw notFound();
-    if (target.role !== ROLES.STUDENT) throw forbidden();
-    await userRepository.updateStatus(id, status);
-    return userRepository.findById(id);
+    const entry = {
+        operatorUserId: actor.userId,
+        operationType,
+        targetType: 'user',
+        targetId: id !== null && id <= 0xffffffff ? id : null,
+    };
+    try {
+        return await withTransaction(async (conn) => {
+            const user = await change(id, conn);
+            await recordOperationLog({ ...entry, result: 'success' }, conn);
+            return user;
+        });
+    } catch (error) {
+        // The transaction has rolled back. Keep the original API error if logging also fails.
+        try {
+            await recordOperationLog({ ...entry, result: 'failure' });
+        } catch {
+            console.error('Failed to save user management failure log:', operationType);
+        }
+        throw error;
+    }
 }
 
-// changeUserRole (U-06): admin only. Never yourself (403), and never so that no active admin
-// remains (409). The check and the change run in one transaction that starts by locking the admin
-// role row, so two admins cannot demote each other at the same moment.
-async function changeUserRole(actor, userIdParam, newRole) {
-    requireRole(actor, [ROLES.ADMIN]);
-    assertOneOf(newRole, ROLE_VALUES, 'role');
-    const id = parseId(userIdParam);
+// Both operations check the target's current role under the same lock before changing it.
+async function getUserForManagement(actor, id, conn) {
     if (id === null) throw notFound();
     if (String(id) === actor.userId) throw forbidden();
+    await userRepository.lockRoleChanges(conn); // first SQL statement in the transaction
+    const target = await userRepository.findById(id, conn);
+    if (!target) throw notFound();
+    return target;
+}
 
-    return withTransaction(async (conn) => {
-        await userRepository.lockRoleChanges(conn); // must stay the first statement
-        const target = await userRepository.findById(id, conn);
-        if (!target) throw notFound();
+// U-07: instructors and admins may enable or disable a student.
+async function setUserStatus(actor, userIdParam, status) {
+    return withUserChangeLog(actor, userIdParam, 'setStatus', async (id, conn) => {
+        requireRole(actor, [ROLES.INSTRUCTOR, ROLES.ADMIN]);
+        assertOneOf(status, USER_STATUS_VALUES, 'status');
+        const target = await getUserForManagement(actor, id, conn);
+        if (target.role !== ROLES.STUDENT) throw forbidden();
+        if (target.status === status) return target;
+
+        await userRepository.updateStatus(id, status, conn);
+        return userRepository.findById(id, conn);
+    });
+}
+
+// U-06: admins may change another user's role while retaining at least one active admin.
+async function changeUserRole(actor, userIdParam, newRole) {
+    return withUserChangeLog(actor, userIdParam, 'changeRole', async (id, conn) => {
+        requireRole(actor, [ROLES.ADMIN]);
+        assertOneOf(newRole, ROLE_VALUES, 'role');
+        const target = await getUserForManagement(actor, id, conn);
         if (target.role === newRole) return target;
 
         if (target.role === ROLES.ADMIN) {
