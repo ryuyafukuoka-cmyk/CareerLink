@@ -1,0 +1,60 @@
+.input-group {
+    display: flex;
+    align-items: stretch;
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border-strong);
+    border-radius: var(--radius-sm);
+    transition: border-color var(--transition-fast);
+}
+
+.input-group:hover:not(.input-group--disabled) {
+    border-color: var(--color-text-muted);
+}
+
+.input-group:focus-within {
+    border-color: var(--color-focus);
+    outline: 2px solid var(--color-focus);
+    outline-offset: 1px;
+}
+
+.input-group--invalid,
+.input-group--invalid:hover:not(.input-group--disabled) {
+    background: var(--color-danger-soft);
+    border-color: var(--color-danger);
+}
+
+.input-group--disabled {
+    background: var(--color-disabled-bg);
+}
+
+/* The group draws the border and ring, so the inner input drops its own (2 classes beat .form-control). */
+.input-group .form-control,
+.input-group .form-control:hover:not(:disabled),
+.input-group .form-control:focus-visible {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: 0;
+    outline: none;
+}
+
+.input-group__addon {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 0 var(--space-3);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    background: var(--color-surface-alt);
+}
+
+.input-group__addon--start {
+    border-right: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.input-group__addon--end {
+    border-left: var(--border-width) solid var(--color-border);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}

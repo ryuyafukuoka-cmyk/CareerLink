@@ -1,0 +1,140 @@
+.toaster {
+    position: fixed;
+    right: var(--space-4);
+    bottom: var(--space-4);
+    z-index: var(--z-toast);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    width: min(24rem, calc(100vw - var(--space-5)));
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    pointer-events: none;
+}
+
+.toast {
+    --toast-accent: var(--color-info);
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-3) var(--space-4) var(--space-4);
+    overflow: hidden;
+    color: var(--color-text);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-left: 4px solid var(--toast-accent);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    pointer-events: auto;
+    animation: toast-in var(--transition-base) both;
+}
+
+.toast--success {
+    --toast-accent: var(--color-success);
+}
+
+.toast--error {
+    --toast-accent: var(--color-danger);
+}
+
+.toast--leaving {
+    animation: toast-out var(--transition-base) both;
+}
+
+.toast__icon {
+    flex: none;
+    margin-top: 1px;
+    color: var(--toast-accent);
+}
+
+.toast__message {
+    flex: 1;
+    margin: 0;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-base);
+    overflow-wrap: anywhere;
+}
+
+.toast__close {
+    flex: none;
+    display: inline-flex;
+    padding: var(--space-1);
+    color: var(--color-text-muted);
+    background: none;
+    border: 0;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.toast__close:hover {
+    color: var(--color-text);
+    background: var(--color-surface-alt);
+}
+
+.toast__close:focus-visible {
+    outline: 2px solid var(--color-focus);
+}
+
+/* Shrinking bar. Its animation end dismisses the toast; hover or focus pauses it. */
+.toast__timer {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: var(--toast-accent);
+    opacity: 0.6;
+    transform-origin: left;
+    animation: toast-timer var(--toast-duration) linear forwards;
+}
+
+.toast:hover .toast__timer,
+.toast:focus-within .toast__timer {
+    animation-play-state: paused;
+}
+
+@keyframes toast-in {
+    from {
+        opacity: 0;
+        transform: translateX(1.5rem);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes toast-out {
+    from {
+        opacity: 1;
+        transform: none;
+    }
+    to {
+        opacity: 0;
+        transform: translateX(1.5rem);
+    }
+}
+
+@keyframes toast-timer {
+    from {
+        transform: scaleX(1);
+    }
+    to {
+        transform: scaleX(0);
+    }
+}
+
+/* Reduced motion: no sliding, but keep the animations running (1ms) so animationend still fires.
+   The timer bar keeps its real duration (it drives auto-dismiss) but is hidden. */
+@media (prefers-reduced-motion: reduce) {
+    .toast,
+    .toast--leaving {
+        animation-duration: 1ms;
+    }
+
+    .toast__timer {
+        opacity: 0;
+    }
+}

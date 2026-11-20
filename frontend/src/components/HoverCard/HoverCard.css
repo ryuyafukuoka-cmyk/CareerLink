@@ -1,0 +1,31 @@
+.hover-card {
+    position: relative;
+    display: inline-block;
+}
+
+.hover-card__card {
+    top: calc(100% + var(--space-2));
+    width: max-content;
+    max-width: 18rem;
+    padding: var(--space-3);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-base);
+}
+
+.hover-card__card--start {
+    left: 0;
+}
+
+.hover-card__card--end {
+    right: 0;
+}
+
+/* Invisible bridge over the gap so the pointer can travel from the trigger into the card. */
+.hover-card__card::before {
+    position: absolute;
+    top: calc(-1 * var(--space-2));
+    right: 0;
+    left: 0;
+    height: var(--space-2);
+    content: '';
+}
