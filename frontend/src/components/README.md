@@ -37,3 +37,21 @@ Input components take the native props (`value`, `onChange`, `disabled`, `name`,
 Helpers: `utils/classNames.js` (`classNames`), `utils/pagination.js` (`getPageItems`), `utils/date.js` (`isRealDate`, `formatDateTime`).
 Hooks: `hooks/useSubmitLock.js` (`run`, `submitting`: blocks double sends), `hooks/useRetryAfter.js` (`start(seconds)`, `secondsLeft`: 429 countdown, text E-009).
 Shared control look: `styles/controls.css` (`.form-control`).
+
+## Hover UIs (overlays) and motion
+
+Forms open as a dialog or drawer over their parent page (decision and plan: `docs/hover-ui.md`).
+
+| Component / hook      | Props / API                                                                                                                              | Notes                                                                                                                                                |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Overlay`             | `open`, `variant` (`dialog` / `drawer`), `size` (`sm` / `md` / `lg`), `title`, `onClose`, `dirty`, `busy`, `hideClose`, `footer`, `role` | Base. Portal, backdrop, enter/exit animation, focus trap, Esc, scroll lock. Stack-aware: only the top one reacts to the keyboard, the ones below dim |
+| `Dialog`              | same as `Overlay`                                                                                                                        | Centered card. Use for small and medium forms                                                                                                        |
+| `Drawer`              | same as `Overlay`                                                                                                                        | Full-height side panel. Use for the record form                                                                                                      |
+| `ConfirmDialog`       | unchanged                                                                                                                                | Now built on `Overlay`                                                                                                                               |
+| `hooks/useOverlay.js` | `useOverlay(name)` returns `{ isOpen, params, open(params), close(result) }`                                                             | Open state lives in router location state: Back closes it, a refresh closes everything, only the parent page can open it                             |
+| `hooks/useOverlay.js` | `useOverlayResult(name, handler)`                                                                                                        | Parent reacts when the overlay closes with a result (reload a list, select the new item)                                                             |
+
+`dirty` makes closing ask C-003 first. `busy` (use `submitting` from `useSubmitLock`) blocks closing while saving.
+
+Motion: tokens `--transition-fast` / `-base` / `-slow`, `--ease-out` / `--ease-in` in `styles/tokens.css`; shared enter animation in `styles/motion.css`.
+Every new component animates its actions quietly (120-320ms, fade and a few pixels of movement) and has its own `prefers-reduced-motion` block.

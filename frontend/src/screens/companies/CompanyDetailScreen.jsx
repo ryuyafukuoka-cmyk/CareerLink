@@ -3,6 +3,7 @@ import { Link, generatePath, useLocation, useNavigate, useParams } from 'react-r
 import { ROLES, getRegionName } from '@shared/definitions';
 import { getCompany } from '@/api/companies.js';
 import { useAuth } from '@/auth/useAuth.js';
+import { usePageTitle } from '@/components/AppLayout/BreadcrumbContext.js';
 import Button from '@/components/Button/Button.jsx';
 import ErrorMessage from '@/components/ErrorMessage/ErrorMessage.jsx';
 import Loading from '@/components/Loading/Loading.jsx';
@@ -38,6 +39,8 @@ function CompanyDetailScreen() {
             cancelled = true;
         };
     }, [companyId, requestKey]);
+
+    usePageTitle(result.company?.nameOfficial);
 
     if (loading) return <Loading centered />;
 

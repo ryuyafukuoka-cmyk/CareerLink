@@ -1,18 +1,31 @@
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ROLE_LABELS } from '@shared/definitions';
-import { getVisibleMenus } from '@/auth/menus.js';
+import { getMenuTree } from '@/auth/menuTree.js';
 import { useAuth } from '@/auth/useAuth.js';
+import BranchedMenu from '@/components/BranchedMenu/BranchedMenu.jsx';
+import Breadcrumb from '@/components/Breadcrumb/Breadcrumb.jsx';
 import Button from '@/components/Button/Button.jsx';
+import { buildTrail } from '@/routes/breadcrumbs.js';
 import { PATHS } from '@/routes/paths.js';
-import { classNames } from '@/utils/classNames.js';
+import { BreadcrumbContext } from './BreadcrumbContext.js';
 import './AppLayout.css';
 
-// Frame for every logged-in screen: header (title, user, role, logout), side menu, page area.
+// Frame for every logged-in screen: header (title, user, role, logout), branched side menu,
+// breadcrumb (always shown above the page), page area.
 // Used as a layout route, so each screen is drawn in <Outlet />.
 function AppLayout() {
     const { user, role, logout } = useAuth();
     const navigate = useNavigate();
-    const menus = getVisibleMenus(role);
+    const { pathname, state } = useLocation();
+    const menus = getMenuTree(role);
+    const [pageTitle, setPageTitle] = useState(null); // { pathname, title } set by usePageTitle
+
+    // Screens may replace the last label with real data; ignore a title left over from another page.
+    const trail = buildTrail(pathname, state);
+    if (pageTitle?.pathname === pathname && trail.length > 0) {
+        trail[trail.length - 1] = { ...trail[trail.length - 1], label: pageTitle.title };
+    }
 
     function handleLogout() {
         logout();
@@ -35,27 +48,19 @@ function AppLayout() {
             </header>
             <div className="app-layout__body">
                 <nav className="app-layout__sidebar" aria-label="メインメニュー">
-                    <ul className="app-layout__menu">
-                        {menus.map((menu) => (
-                            <li key={menu.id}>
-                                <NavLink
-                                    to={menu.path}
-                                    end={menu.path === PATHS.home}
-                                    className={({ isActive }) =>
-                                        classNames(
-                                            'app-layout__link',
-                                            isActive && 'app-layout__link--active',
-                                        )
-                                    }
-                                >
-                                    {menu.label}
-                                </NavLink>
-                            </li>
-                        ))}
-                    </ul>
+                    <BranchedMenu items={menus} />
                 </nav>
                 <div className="app-layout__main">
-                    <Outlet />
+                    {trail.length > 1 && (
+                        <div className="app-layout__breadcrumb">
+                            <Breadcrumb items={trail} />
+                        </div>
+                    )}
+                    <BreadcrumbContext.Provider value={setPageTitle}>
+                        <div key={pathname} className="app-layout__page">
+                            <Outlet />
+                        </div>
+                    </BreadcrumbContext.Provider>
                 </div>
             </div>
         </div>

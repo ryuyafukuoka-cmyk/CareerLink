@@ -1,0 +1,30 @@
+/*
+ * Motion rules. Every action gets a short, quiet animation (120-320ms): things fade and
+ * move a few pixels, never bounce or block. Tokens: --transition-* (transitions), --duration-* with --ease-out / --ease-in (animations).
+ * Each component keeps its own reduced-motion block. Enter animations that are shared live here.
+ */
+@keyframes fade-rise-in {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* A page, a result message and a field error appear softly instead of snapping in. */
+.app-layout__page,
+.notice,
+.form-field__error {
+    animation: fade-rise-in var(--duration-base) var(--ease-out) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .app-layout__page,
+    .notice,
+    .form-field__error {
+        animation: none;
+    }
+}

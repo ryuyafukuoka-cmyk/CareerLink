@@ -7,7 +7,7 @@ import GalleryPage from './GalleryPage.jsx';
 // Dev-only entry: open http://localhost:5173/gallery.html. Delete src/gallery and gallery.html before the freeze.
 createRoot(document.getElementById('root')).render(
     <StrictMode>
-        <MemoryRouter>
+        <MemoryRouter initialEntries={['/records/new']}>
             <GalleryPage />
         </MemoryRouter>
     </StrictMode>,

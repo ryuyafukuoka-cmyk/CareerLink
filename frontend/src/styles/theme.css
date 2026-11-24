@@ -1,10 +1,11 @@
 /*
  * Raw palette. Two themes, switched by <html data-theme="light|dark"> (set by public/theme-init.js).
+ * A nested element with data-theme (the gallery's side-by-side preview) gets the same palette.
  * In dark the 50..950 scales are reversed, so var(--text-600) is "a muted text color" in both themes.
  * Components never use these directly: colors.css maps them onto the --color-* tokens.
  */
 :root,
-:root[data-theme='light'] {
+[data-theme='light'] {
     --text: #0a0f0c;
     --background: #fefff5;
     --primary: #01b75c;
@@ -72,7 +73,7 @@
     --accent-950: #04160d;
 }
 
-:root[data-theme='dark'] {
+[data-theme='dark'] {
     --text: #f0f5f2;
     --background: #090a00;
     --primary: #48fea3;

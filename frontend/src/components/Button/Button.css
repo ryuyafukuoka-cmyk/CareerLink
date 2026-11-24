@@ -13,7 +13,13 @@
     cursor: pointer;
     transition:
         background-color var(--transition-fast),
-        border-color var(--transition-fast);
+        border-color var(--transition-fast),
+        transform var(--transition-fast);
+}
+
+/* Small press feedback. */
+.button:active:not(:disabled) {
+    transform: scale(0.98);
 }
 
 .button--primary {
@@ -66,4 +72,14 @@
 
 .button--loading:disabled {
     cursor: progress;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .button {
+        transition: none;
+    }
+
+    .button:active:not(:disabled) {
+        transform: none;
+    }
 }

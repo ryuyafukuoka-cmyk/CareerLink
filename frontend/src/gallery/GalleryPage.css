@@ -1,5 +1,5 @@
 .gallery {
-    max-width: 48rem;
+    max-width: 56rem;
     margin: 0 auto;
     padding: var(--space-6) var(--space-4) var(--space-8);
 }
@@ -60,4 +60,21 @@
 
 .gallery__muted {
     color: var(--color-text-muted);
+}
+
+.gallery__themes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    gap: var(--space-4);
+}
+
+.gallery__theme-frame {
+    display: grid;
+    align-content: start;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    color: var(--color-text);
+    background: var(--color-bg);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
 }

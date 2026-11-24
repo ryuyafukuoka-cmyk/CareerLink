@@ -34,8 +34,10 @@
     --color-focus: #2f5fd0;
 
     /* Typography */
+    /* Google Fonts, loaded by the first @import in index.css (Noto Sans JP, Zen Maru Gothic, Klee One).
+       To change the app font, change the family here. Only the family in use is downloaded. */
     --font-family-base:
-        'Yu Gothic UI', 'Hiragino Sans', 'Meiryo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', system-ui, sans-serif;
     --font-family-mono: ui-monospace, Consolas, 'Courier New', monospace;
     --font-size-xs: 0.75rem;
     --font-size-sm: 0.875rem;
@@ -85,4 +87,12 @@
     /* Motion */
     --transition-fast: 120ms ease;
     --transition-base: 200ms ease;
+    --transition-slow: 320ms ease;
+    /* Durations alone, for `animation: name var(--duration-base) var(--ease-out)`.
+       --transition-* already contain an easing, so they must not be combined with another one. */
+    --duration-fast: 120ms;
+    --duration-base: 200ms;
+    --duration-slow: 320ms;
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
 }

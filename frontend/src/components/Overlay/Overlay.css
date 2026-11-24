@@ -1,0 +1,231 @@
+.overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+}
+
+.overlay[data-variant='dialog'] {
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+}
+
+.overlay[data-variant='drawer'] {
+    justify-content: flex-end;
+}
+
+.overlay__backdrop {
+    position: absolute;
+    inset: 0;
+    background: var(--color-overlay);
+}
+
+.overlay__panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    box-shadow: var(--shadow-lg);
+    transition:
+        transform var(--transition-base),
+        opacity var(--transition-base);
+}
+
+.overlay__panel:focus {
+    outline: none;
+}
+
+/* Dialog: centered card. */
+.overlay[data-variant='dialog'] .overlay__panel {
+    max-height: calc(100vh - 2 * var(--space-4));
+    border-radius: var(--radius-lg);
+}
+
+.overlay[data-variant='dialog'][data-size='sm'] .overlay__panel {
+    max-width: 30rem;
+}
+
+.overlay[data-variant='dialog'][data-size='md'] .overlay__panel {
+    max-width: 40rem;
+}
+
+.overlay[data-variant='dialog'][data-size='lg'] .overlay__panel {
+    max-width: 52rem;
+}
+
+/* Drawer: full-height panel on the right. */
+.overlay[data-variant='drawer'] .overlay__panel {
+    height: 100%;
+}
+
+.overlay[data-variant='drawer'][data-size='sm'] .overlay__panel {
+    max-width: 28rem;
+}
+
+.overlay[data-variant='drawer'][data-size='md'] .overlay__panel {
+    max-width: 40rem;
+}
+
+.overlay[data-variant='drawer'][data-size='lg'] .overlay__panel {
+    max-width: 56rem;
+}
+
+/* An overlay opened on top of this one: this one steps back a little. */
+.overlay[data-covered] .overlay__panel {
+    opacity: 0.7;
+    transform: scale(0.97);
+}
+
+.overlay__header {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-5);
+    border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.overlay__title {
+    margin: 0;
+    font-size: var(--font-size-lg);
+}
+
+.overlay__close {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    color: var(--color-text-muted);
+    background: none;
+    border: 0;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition:
+        background-color var(--transition-fast),
+        color var(--transition-fast);
+}
+
+.overlay__close:hover:not(:disabled) {
+    color: var(--color-text);
+    background: var(--color-surface-alt);
+}
+
+.overlay__close:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+.overlay__close:disabled {
+    color: var(--color-disabled-text);
+    cursor: not-allowed;
+}
+
+.overlay__body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: var(--space-3);
+    min-height: 0;
+    padding: var(--space-5);
+    overflow-y: auto;
+}
+
+/* Form fields inside the body: the body's gap already spaces them. */
+.overlay__body .form-field {
+    margin-bottom: 0;
+}
+
+.overlay__footer {
+    display: flex;
+    flex: none;
+    justify-content: flex-end;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-5);
+    border-top: var(--border-width) solid var(--color-border);
+}
+
+/*
+ * Enter and exit. Open uses `backwards` fill so the normal styles (including the covered state)
+ * take over afterwards; exit uses `forwards` so the panel stays hidden until it unmounts.
+ */
+.overlay__backdrop[data-state='open'] {
+    animation: overlay-fade-in var(--duration-base) ease backwards;
+}
+
+.overlay__backdrop[data-state='closed'] {
+    animation: overlay-fade-out var(--duration-fast) ease forwards;
+}
+
+.overlay[data-variant='dialog'] .overlay__panel[data-state='open'] {
+    animation: overlay-dialog-in var(--duration-base) var(--ease-out) backwards;
+}
+
+.overlay[data-variant='dialog'] .overlay__panel[data-state='closed'] {
+    animation: overlay-dialog-out var(--duration-fast) var(--ease-in) forwards;
+}
+
+.overlay[data-variant='drawer'] .overlay__panel[data-state='open'] {
+    animation: overlay-drawer-in var(--duration-slow) var(--ease-out) backwards;
+}
+
+.overlay[data-variant='drawer'] .overlay__panel[data-state='closed'] {
+    animation: overlay-drawer-out var(--duration-base) var(--ease-in) forwards;
+}
+
+@keyframes overlay-fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes overlay-fade-out {
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes overlay-dialog-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.97);
+    }
+}
+
+@keyframes overlay-dialog-out {
+    to {
+        opacity: 0;
+        transform: translateY(4px) scale(0.98);
+    }
+}
+
+@keyframes overlay-drawer-in {
+    from {
+        opacity: 0;
+        transform: translateX(32px);
+    }
+}
+
+@keyframes overlay-drawer-out {
+    to {
+        opacity: 0;
+        transform: translateX(32px);
+    }
+}
+
+/* Reduced motion: no movement, but keep a 1ms animation so animationend still fires. */
+@media (prefers-reduced-motion: reduce) {
+    .overlay__backdrop[data-state],
+    .overlay__panel[data-state] {
+        animation-duration: 1ms;
+    }
+
+    .overlay__panel,
+    .overlay__close {
+        transition: none;
+    }
+}
