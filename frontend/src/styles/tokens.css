@@ -34,10 +34,12 @@
     --color-focus: #2f5fd0;
 
     /* Typography */
-    /* Google Fonts, loaded by the first @import in index.css (Noto Sans JP, Zen Maru Gothic, Klee One).
-       To change the app font, change the family here. Only the family in use is downloaded. */
+    /* Google Fonts, loaded by the first @import in index.css. Only the family in use is downloaded.
+       Default: Zen Maru Gothic. Kept for comparison (swap the first name):
+       'Noto Sans JP' (400-700) and 'Klee One' (400 / 600 only). The gallery can preview all three. */
     --font-family-base:
-        'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', system-ui, sans-serif;
+        'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo',
+        system-ui, sans-serif;
     --font-family-mono: ui-monospace, Consolas, 'Courier New', monospace;
     --font-size-xs: 0.75rem;
     --font-size-sm: 0.875rem;
