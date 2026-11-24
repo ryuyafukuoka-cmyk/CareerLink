@@ -1,9 +1,9 @@
-// Turns the raw JWT claims (already verified by the API Gateway JWT authorizer) into the small
-// `Claims` object the app uses: { issuer, subject, adGroups, displayName } (F-002 型).
+// API Gateway が検証した JWT クレームを、アプリで使う Claims 型に変換する（F-002）。
+// 取り出す項目は issuer、subject、adGroups、displayName。
 const { config } = require('../common/config');
 
-// The group claim may arrive as an array, a JSON-like string "[a, b]" (API Gateway stringifies
-// array claims), or a comma-separated string. Always returns a clean string[].
+// グループは配列、API Gateway が配列を文字列化した "[a, b]"、またはカンマ区切りの文字列で届く。
+// 前後の空白や空要素を取り除き、グループ名の配列を返す。
 function parseGroups(value) {
     if (Array.isArray(value)) return value.map((v) => String(v).trim()).filter(Boolean);
     if (typeof value !== 'string') return [];
@@ -14,7 +14,7 @@ function parseGroups(value) {
         .filter(Boolean);
 }
 
-// Returns Claims, or null when the token has no usable identity (issuer + subject).
+// 発行者（iss）と利用者識別子（sub）がそろえば Claims を返す。どちらかが欠けていれば null を返す。
 function buildClaims(raw) {
     if (!raw || typeof raw !== 'object') return null;
     const issuer = typeof raw.iss === 'string' ? raw.iss : '';
