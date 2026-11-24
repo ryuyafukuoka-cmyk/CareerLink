@@ -1,0 +1,100 @@
+.status-mark {
+    --mark-color: var(--color-text-muted);
+    --mark-soft: var(--color-surface-alt);
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0.125rem var(--space-3) 0.125rem var(--space-2);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.4;
+    white-space: nowrap;
+    color: var(--mark-color);
+    background: var(--mark-soft);
+    border: var(--border-width) solid currentColor;
+    border-left-width: 3px;
+    animation: status-mark-in var(--duration-base) var(--ease-out) backwards;
+}
+
+.status-mark--sm {
+    padding: 0 var(--space-2) 0 var(--space-1);
+    font-size: var(--font-size-xs);
+}
+
+.status-mark--muted {
+    --mark-color: var(--color-text-muted);
+    --mark-soft: var(--color-surface-alt);
+}
+
+.status-mark--info {
+    --mark-color: var(--color-info);
+    --mark-soft: var(--color-info-soft);
+}
+
+.status-mark--success {
+    --mark-color: var(--color-success);
+    --mark-soft: var(--color-success-soft);
+}
+
+.status-mark--warning {
+    --mark-color: var(--color-warning);
+    --mark-soft: var(--color-warning-soft);
+}
+
+.status-mark--danger {
+    --mark-color: var(--color-danger);
+    --mark-soft: var(--color-danger-soft);
+}
+
+.status-mark__glyph {
+    flex: none;
+}
+
+/* Text keeps the normal text color so the label stays readable on every tone. */
+.status-mark__text {
+    color: var(--color-text);
+}
+
+/* "In progress" gets a soft ring that breathes, so a live selection stands out in a list. */
+.status-mark--live::after {
+    position: absolute;
+    inset: -3px;
+    content: '';
+    pointer-events: none;
+    border: var(--border-width) solid var(--mark-color);
+    opacity: 0;
+    animation: status-mark-ring 2.4s ease-out infinite;
+}
+
+@keyframes status-mark-in {
+    from {
+        opacity: 0;
+        transform: translateX(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes status-mark-ring {
+    0% {
+        opacity: 0.5;
+        transform: scale(0.96);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.08);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .status-mark {
+        animation: none;
+    }
+
+    .status-mark--live::after {
+        display: none;
+    }
+}

@@ -1,0 +1,76 @@
+.stage-tracker {
+    --step-color: var(--color-primary);
+    display: flex;
+    gap: var(--space-2);
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.stage-tracker__step {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+    /* Rubber: a little overshoot when the width changes. */
+    transition: flex-grow 480ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.stage-tracker__step--current {
+    flex-grow: 2.2;
+}
+
+.stage-tracker__step--success {
+    --step-color: var(--color-success);
+}
+
+.stage-tracker__step--danger {
+    --step-color: var(--color-danger);
+}
+
+.stage-tracker__step--warning {
+    --step-color: var(--color-warning);
+}
+
+.stage-tracker__bar {
+    position: relative;
+    display: block;
+    height: 0.5rem;
+    overflow: hidden;
+    background: var(--color-border);
+}
+
+.stage-tracker__bar::after {
+    position: absolute;
+    inset: 0;
+    content: '';
+    background: var(--step-color);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 420ms var(--ease-out);
+}
+
+.stage-tracker__step--done .stage-tracker__bar::after {
+    transform: scaleX(1);
+}
+
+.stage-tracker__label {
+    overflow: hidden;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stage-tracker__step--current .stage-tracker__label {
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .stage-tracker__step,
+    .stage-tracker__bar::after {
+        transition: none;
+    }
+}

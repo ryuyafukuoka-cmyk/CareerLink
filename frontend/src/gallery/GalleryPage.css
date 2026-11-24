@@ -78,3 +78,8 @@
     border: var(--border-width) solid var(--color-border);
     border-radius: var(--radius-md);
 }
+
+.gallery__glow {
+    padding: var(--space-4);
+    background: var(--color-surface);
+}

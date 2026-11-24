@@ -2,21 +2,28 @@ import { useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
 import { getMenuTree } from '@/auth/menuTree.js';
 import BranchedMenu from '@/components/BranchedMenu/BranchedMenu.jsx';
+import AnimatedNumber from '@/components/AnimatedNumber/AnimatedNumber.jsx';
+import BorderGlow from '@/components/BorderGlow/BorderGlow.jsx';
 import Breadcrumb from '@/components/Breadcrumb/Breadcrumb.jsx';
 import Button from '@/components/Button/Button.jsx';
 import Calendar from '@/components/Calendar/Calendar.jsx';
+import Checkbox from '@/components/Checkbox/Checkbox.jsx';
 import Combobox from '@/components/Combobox/Combobox.jsx';
 import ConfirmDialog from '@/components/ConfirmDialog/ConfirmDialog.jsx';
 import DatePicker from '@/components/DatePicker/DatePicker.jsx';
 import Dialog from '@/components/Dialog/Dialog.jsx';
 import Drawer from '@/components/Drawer/Drawer.jsx';
 import DropdownMenu from '@/components/DropdownMenu/DropdownMenu.jsx';
+import FuseButton from '@/components/FuseButton/FuseButton.jsx';
 import FormField from '@/components/FormField/FormField.jsx';
 import HoverCard from '@/components/HoverCard/HoverCard.jsx';
 import InputGroup from '@/components/InputGroup/InputGroup.jsx';
+import Loading from '@/components/Loading/Loading.jsx';
 import Notice from '@/components/Notice/Notice.jsx';
 import Progress from '@/components/Progress/Progress.jsx';
 import RadioGroup from '@/components/RadioGroup/RadioGroup.jsx';
+import StageTracker from '@/components/StageTracker/StageTracker.jsx';
+import StatusMark from '@/components/StatusMark/StatusMark.jsx';
 import TextInput from '@/components/TextInput/TextInput.jsx';
 import ThemeToggle from '@/components/ThemeToggle/ThemeToggle.jsx';
 import { toast } from '@/components/Toast/toast.js';
@@ -107,6 +114,9 @@ function GalleryPage() {
     const [calendarDate, setCalendarDate] = useState('2026/11/20');
     const [stage, setStage] = useState('considering');
     const [done, setDone] = useState(2);
+    const [count, setCount] = useState(12);
+    const [checked, setChecked] = useState(false);
+    const [fuseLog, setFuseLog] = useState('まだ実行されていません');
     const [dialogOpen, setDialogOpen] = useState(false);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [stackedOpen, setStackedOpen] = useState(false);
@@ -202,6 +212,66 @@ function GalleryPage() {
                         { label: '株式会社サンプル' },
                     ]}
                 />
+            </Section>
+
+            <Section title="Signature: StatusMark / StageTracker">
+                <div className="gallery__row">
+                    <StatusMark status="considering" />
+                    <StatusMark status="inProgress" />
+                    <StatusMark status="offered" />
+                    <StatusMark status="rejected" />
+                    <StatusMark status="declined" />
+                    <StatusMark status="draft" />
+                    <StatusMark status="completed" />
+                    <StatusMark status="inProgress" size="sm" />
+                </div>
+                <StageTracker stage={stage} />
+                <RadioGroup
+                    orientation="horizontal"
+                    value={stage}
+                    onChange={setStage}
+                    options={[
+                        { value: 'considering', label: '検討中' },
+                        { value: 'inProgress', label: '選考中' },
+                        { value: 'offered', label: '内定' },
+                        { value: 'rejected', label: '落選' },
+                        { value: 'declined', label: '辞退' },
+                    ]}
+                />
+            </Section>
+
+            <Section title="Signature: FuseButton / AnimatedNumber / BorderGlow">
+                <div className="gallery__row">
+                    <FuseButton onConfirm={() => setFuseLog('実行されました')}>削除する</FuseButton>
+                    <FuseButton variant="primary" onConfirm={() => setFuseLog('公開しました')}>
+                        記入完了
+                    </FuseButton>
+                    <span>{fuseLog}</span>
+                </div>
+                <div className="gallery__row">
+                    <Button variant="secondary" onClick={() => setCount((n) => n + 37)}>
+                        ＋37
+                    </Button>
+                    <Button variant="secondary" onClick={() => setCount(0)}>
+                        0
+                    </Button>
+                    <span>
+                        関連する活動記録 <AnimatedNumber value={count} /> 件
+                    </span>
+                </div>
+                <BorderGlow className="gallery__glow">
+                    最新の応募回（光は画面に1か所だけ）
+                </BorderGlow>
+            </Section>
+
+            <Section title="Signature: Checkbox / RadioGroup / Loading">
+                <Checkbox
+                    label="公式サイトなし"
+                    checked={checked}
+                    onChange={(event) => setChecked(event.target.checked)}
+                />
+                <Checkbox label="無効の例" disabled checked readOnly />
+                <Loading message="読み込み中…" />
             </Section>
 
             <Section title="Progress">

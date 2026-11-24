@@ -16,3 +16,13 @@ Import with `import X from '@/components/X/X.jsx'`. Toast is the exception (see 
 | RadioGroup   | `options [{value,label,description?,disabled?}]`, `value`, `onChange(value)`, `name`, `variant`, `orientation`, `disabled` | `variant`: default / card. Use inside `<FormField group label="…">`. `onChange` gets the value.                                                               |
 
 Shared pieces: `styles/popover.css` (floating panel surface), `hooks/useClickOutside.js`, `utils/calendar.js`.
+
+## Signature components
+
+- `StatusMark`: `status` (a stage value, or `draft` / `completed`), `label?`, `size` (`sm` / `md`). One look for every status. `inProgress` has a breathing ring.
+- `StageTracker`: `stage`. Three stretchy bars (considering, in progress, result). Display only; the stage itself is changed with a Select.
+- `FuseButton`: `onConfirm`, `holdMs` (1200), `variant` (`danger` / `primary`), `hint`, `disabled`. Hold to confirm (mouse, touch, Space / Enter). For irreversible actions only.
+- `AnimatedNumber`: `value` (integer), `duration`, `locale`. Counts to the value; screen readers read the final number.
+- `BorderGlow`: `as`, `active`. A light runs around the border. Use once per screen.
+- `DotField`: no props. Login-screen background; put it first inside a `position: relative` container.
+- `Checkbox` now draws its own box (spring tick). `RadioGroup` has a jelly press. `Loading` is a 3x3 lattice. All keep their props.

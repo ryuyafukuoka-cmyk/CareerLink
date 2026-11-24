@@ -1,0 +1,93 @@
+.fuse-button {
+    --fuse-color: var(--color-danger);
+    --fuse-burnt: var(--color-danger-hover);
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: 2.25rem;
+    padding: var(--space-2) var(--space-4);
+    overflow: hidden;
+    font: inherit;
+    font-weight: var(--font-weight-medium);
+    line-height: 1.2;
+    color: var(--color-text-inverse);
+    cursor: pointer;
+    user-select: none;
+    touch-action: none;
+    background: var(--fuse-color);
+    border: var(--border-width) solid transparent;
+}
+
+.fuse-button--primary {
+    --fuse-color: var(--color-primary);
+    --fuse-burnt: var(--color-primary-active);
+}
+
+/* The burnt part grows from the left while the button is held. */
+.fuse-button__fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0;
+    background: var(--fuse-burnt);
+    transition: width 200ms var(--ease-out);
+}
+
+.fuse-button[data-holding='true'] .fuse-button__fill {
+    width: 100%;
+    transition: width var(--hold-ms) linear;
+}
+
+/* Spark at the burning tip. */
+.fuse-button__fill::after {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 3px;
+    height: 100%;
+    content: '';
+    background: var(--color-warning-soft);
+    box-shadow: 0 0 8px 2px var(--color-warning);
+    opacity: 0;
+}
+
+.fuse-button[data-holding='true'] .fuse-button__fill::after {
+    opacity: 1;
+    animation: fuse-flicker 160ms steps(2) infinite;
+}
+
+.fuse-button__label,
+.fuse-button__hint {
+    position: relative;
+}
+
+.fuse-button__hint {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-normal);
+    opacity: 0.75;
+}
+
+.fuse-button:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+.fuse-button:disabled {
+    color: var(--color-disabled-text);
+    cursor: not-allowed;
+    background: var(--color-disabled-bg);
+}
+
+@keyframes fuse-flicker {
+    50% {
+        opacity: 0.55;
+    }
+}
+
+/* The burning bar is the only progress signal, so it stays; only the flicker stops. */
+@media (prefers-reduced-motion: reduce) {
+    .fuse-button[data-holding='true'] .fuse-button__fill::after {
+        animation: none;
+    }
+}

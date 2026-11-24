@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { USE_MOCK_AUTH } from '@/auth/mockAuth.js';
 import { useAuth } from '@/auth/useAuth.js';
 import Button from '@/components/Button/Button.jsx';
+import DotField from '@/components/DotField/DotField.jsx';
 import ErrorMessage from '@/components/ErrorMessage/ErrorMessage.jsx';
 import Loading from '@/components/Loading/Loading.jsx';
 import { getMessage } from '@/messages';
@@ -40,6 +41,7 @@ function LoginScreen() {
 
     return (
         <main className="login-screen">
+            <DotField />
             <section className="login-screen__card">
                 <h1 className="login-screen__title">CareerLink</h1>
                 <p className="login-screen__lead">ICTエンジニア科 就職活動記録システム</p>

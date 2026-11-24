@@ -42,7 +42,15 @@
     background: var(--color-surface);
     border: 2px solid var(--color-border-strong);
     border-radius: 50%;
-    transition: border-color var(--transition-fast);
+    transition:
+        border-color var(--transition-fast),
+        transform 420ms cubic-bezier(0.34, 1.9, 0.5, 1);
+}
+
+/* Jelly: squashed while pressed, wobbles back when released. */
+.radio-group__option:active:not(.radio-group__option--disabled) .radio-group__mark {
+    transform: scale(1.25, 0.78);
+    transition-duration: 80ms;
 }
 
 .radio-group__mark::after {
@@ -121,5 +129,9 @@
     .radio-group__mark::after,
     .radio-group--card .radio-group__option {
         transition: none;
+    }
+
+    .radio-group__option:active .radio-group__mark {
+        transform: none;
     }
 }

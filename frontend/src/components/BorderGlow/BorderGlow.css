@@ -1,0 +1,49 @@
+/* Typed angle so the gradient can rotate. Without @property support the ring just stays still. */
+@property --glow-angle {
+    syntax: '<angle>';
+    inherits: false;
+    initial-value: 0deg;
+}
+
+.border-glow {
+    position: relative;
+}
+
+.border-glow--on {
+    box-shadow: 0 0 14px color-mix(in srgb, var(--color-primary) 22%, transparent);
+}
+
+/* Ring only: the gradient fills the box, the mask cuts the middle out. */
+.border-glow--on::before {
+    position: absolute;
+    inset: 0;
+    padding: 2px;
+    content: '';
+    pointer-events: none;
+    background: conic-gradient(
+        from var(--glow-angle),
+        transparent 0 60%,
+        var(--color-primary) 80%,
+        var(--color-info) 92%,
+        transparent 100%
+    );
+    border-radius: inherit;
+    mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
+    animation: border-glow-spin 3.2s linear infinite;
+}
+
+@keyframes border-glow-spin {
+    to {
+        --glow-angle: 360deg;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .border-glow--on::before {
+        animation: none;
+    }
+}
