@@ -3,6 +3,7 @@ import { CalendarDays } from 'lucide-react';
 import Calendar from '@/components/Calendar/Calendar.jsx';
 import { useFormField } from '@/components/FormField/useFormField.js';
 import { useClickOutside } from '@/hooks/useClickOutside.js';
+import { usePresence } from '@/hooks/usePresence.js';
 import { classNames } from '@/utils/classNames.js';
 import '@/styles/popover.css';
 import './DatePicker.css';
@@ -34,6 +35,8 @@ function DatePicker({
     const composingRef = useRef(false);
     const [open, setOpen] = useState(false);
     const [focusCalendar, setFocusCalendar] = useState(false);
+
+    const { mounted, state } = usePresence(open);
 
     useClickOutside(wrapperRef, () => setOpen(false), open);
 
@@ -114,8 +117,13 @@ function DatePicker({
                 <CalendarDays size={18} aria-hidden="true" />
             </button>
 
-            {open && (
-                <div className="popover date-picker__popover" role="dialog" aria-label="日付を選択">
+            {mounted && (
+                <div
+                    className="popover date-picker__popover"
+                    data-state={state}
+                    role="dialog"
+                    aria-label="日付を選択"
+                >
                     <Calendar
                         value={value}
                         min={min}

@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Check, ChevronDown, X } from 'lucide-react';
 import { classNames } from '@/utils/classNames.js';
 import { useFormField } from '@/components/FormField/useFormField.js';
+import { usePresence } from '@/hooks/usePresence.js';
 import '@/styles/popover.css';
 import './Combobox.css';
 
@@ -48,7 +49,10 @@ function Combobox({
     const [activeIndex, setActiveIndex] = useState(0);
 
     const selected = options.find((option) => option.value === value);
-    const inputValue = query ?? selected?.label ?? '';
+    const { mounted, state } = usePresence(open);
+    // While the list folds away, `query` is kept so the options do not jump back to the full list.
+    // The input already shows the chosen label. openList and typing set `query` again.
+    const inputValue = open && query !== null ? query : (selected?.label ?? '');
     const filtered = query
         ? options.filter((option) => normalize(option.label).includes(normalize(query)))
         : options;
@@ -61,12 +65,12 @@ function Combobox({
 
     function closeList() {
         setOpen(false);
-        setQuery(null);
     }
 
     function openList() {
         if (open) return;
-        const selectedIndex = filtered.findIndex((option) => option.value === value);
+        setQuery(null);
+        const selectedIndex = options.findIndex((option) => option.value === value);
         setActiveIndex(Math.max(selectedIndex, 0));
         setOpen(true);
     }
@@ -167,11 +171,12 @@ function Combobox({
             ) : null}
             <ChevronDown className="combobox__chevron" size={16} aria-hidden="true" />
 
-            {open && (
+            {mounted && (
                 <ul
                     ref={listRef}
                     id={listId}
                     role="listbox"
+                    data-state={state}
                     className="popover combobox__list"
                     // Keep focus in the input while clicking an option.
                     onMouseDown={(event) => event.preventDefault()}
@@ -186,7 +191,9 @@ function Combobox({
                                 role="option"
                                 aria-selected={option.value === value}
                                 aria-disabled={option.disabled || undefined}
+                                style={{ '--i': index }}
                                 className={classNames(
+                                    'popover__item',
                                     'combobox__option',
                                     index === active && 'combobox__option--active',
                                     option.disabled && 'combobox__option--disabled',

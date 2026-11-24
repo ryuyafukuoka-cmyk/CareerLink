@@ -5,6 +5,7 @@ import { getCompany } from '@/api/companies.js';
 import { useAuth } from '@/auth/useAuth.js';
 import { usePageTitle } from '@/components/AppLayout/BreadcrumbContext.js';
 import Button from '@/components/Button/Button.jsx';
+import ExternalLink from '@/components/ExternalLink/ExternalLink.jsx';
 import ErrorMessage from '@/components/ErrorMessage/ErrorMessage.jsx';
 import Loading from '@/components/Loading/Loading.jsx';
 import Notice from '@/components/Notice/Notice.jsx';
@@ -92,9 +93,7 @@ function CompanyDetailScreen() {
                     <dt>公式サイト</dt>
                     <dd>
                         {company.websiteUrl && isHttpUrl(company.websiteUrl) ? (
-                            <a href={company.websiteUrl} target="_blank" rel="noopener noreferrer">
-                                {company.websiteUrl}
-                            </a>
+                            <ExternalLink href={company.websiteUrl} />
                         ) : (
                             'なし'
                         )}

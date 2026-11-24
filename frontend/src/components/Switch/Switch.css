@@ -1,0 +1,104 @@
+.switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+}
+
+/* Invisible but still focusable and readable by screen readers. */
+.switch__input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+}
+
+.switch__track {
+    position: relative;
+    flex: none;
+    width: 2.5rem;
+    height: 1.375rem;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border-strong);
+    transition:
+        background-color var(--transition-fast),
+        border-color var(--transition-fast);
+}
+
+.switch:hover .switch__track {
+    border-color: var(--color-text-muted);
+}
+
+.switch__thumb {
+    position: absolute;
+    top: 50%;
+    left: 2px;
+    width: 0.875rem;
+    height: 0.875rem;
+    background: var(--color-border-strong);
+    transform: translateY(-50%);
+    transition:
+        left 260ms cubic-bezier(0.34, 1.6, 0.5, 1),
+        background-color var(--transition-fast),
+        width 120ms var(--ease-out);
+}
+
+/* Press: the thumb stretches, then springs to the other side. */
+.switch:active .switch__thumb {
+    width: 1.125rem;
+}
+
+.switch__input:checked + .switch__track {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.switch__input:checked + .switch__track .switch__thumb {
+    left: calc(100% - 0.875rem - 2px);
+    background: var(--color-text-inverse);
+}
+
+.switch:active .switch__input:checked + .switch__track .switch__thumb {
+    left: calc(100% - 1.125rem - 2px);
+}
+
+.switch__input:focus-visible + .switch__track {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+.switch--disabled {
+    color: var(--color-disabled-text);
+    cursor: not-allowed;
+}
+
+.switch--disabled .switch__track {
+    background: var(--color-disabled-bg);
+    border-color: var(--color-border);
+}
+
+.switch--disabled .switch__thumb {
+    background: var(--color-disabled-text);
+}
+
+.switch--disabled:active .switch__thumb {
+    width: 0.875rem;
+}
+
+.switch__input:disabled:checked + .switch__track {
+    background: var(--color-disabled-text);
+    border-color: var(--color-disabled-text);
+}
+
+.switch__input:disabled:checked + .switch__track .switch__thumb {
+    background: var(--color-disabled-bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .switch__track,
+    .switch__thumb {
+        transition: none;
+    }
+}

@@ -1,6 +1,7 @@
 import { useCallback, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useClickOutside } from '@/hooks/useClickOutside.js';
+import { usePresence } from '@/hooks/usePresence.js';
 import { classNames } from '@/utils/classNames.js';
 import '@/styles/popover.css';
 import './DropdownMenu.css';
@@ -18,6 +19,8 @@ function DropdownMenu({ items, align = 'start', triggerLabel, children, classNam
     const triggerRef = useRef(null);
     const menuRef = useRef(null);
     const [open, setOpen] = useState(false);
+
+    const { mounted, state } = usePresence(open);
 
     useClickOutside(wrapperRef, () => setOpen(false), open);
 
@@ -98,9 +101,10 @@ function DropdownMenu({ items, align = 'start', triggerLabel, children, classNam
                 {children}
             </button>
 
-            {open && (
+            {mounted && (
                 <ul
                     ref={setMenuNode}
+                    data-state={state}
                     id={menuId}
                     role="menu"
                     className={classNames(
@@ -116,7 +120,8 @@ function DropdownMenu({ items, align = 'start', triggerLabel, children, classNam
                                 <li
                                     key={`sep-${index}`}
                                     role="separator"
-                                    className="dropdown-menu__separator"
+                                    style={{ '--i': index }}
+                                    className="popover__item dropdown-menu__separator"
                                 />
                             );
                         }
@@ -132,7 +137,12 @@ function DropdownMenu({ items, align = 'start', triggerLabel, children, classNam
                             item.danger && 'dropdown-menu__item--danger',
                         );
                         return (
-                            <li key={`${item.label}-${index}`} role="none">
+                            <li
+                                key={`${item.label}-${index}`}
+                                role="none"
+                                style={{ '--i': index }}
+                                className="popover__item"
+                            >
                                 {item.to && !item.disabled ? (
                                     <Link
                                         role="menuitem"

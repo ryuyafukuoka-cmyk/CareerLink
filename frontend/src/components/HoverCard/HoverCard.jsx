@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { classNames } from '@/utils/classNames.js';
+import { usePresence } from '@/hooks/usePresence.js';
 import '@/styles/popover.css';
 import './HoverCard.css';
 
@@ -18,6 +19,7 @@ function HoverCard({
     const wrapperRef = useRef(null);
     const timerRef = useRef(null);
     const [open, setOpen] = useState(false);
+    const { mounted, state } = usePresence(open);
 
     // Never leave a timer running after unmount.
     useEffect(() => () => clearTimeout(timerRef.current), []);
@@ -48,9 +50,10 @@ function HoverCard({
             <span className="hover-card__trigger" aria-describedby={open ? cardId : undefined}>
                 {children}
             </span>
-            {open && (
+            {mounted && (
                 <div
                     id={cardId}
+                    data-state={state}
                     role="tooltip"
                     className={classNames(
                         'popover',

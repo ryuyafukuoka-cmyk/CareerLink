@@ -1,0 +1,39 @@
+/* Link look shared by TextLink and ExternalLink: the underline draws in from the left
+   and the color deepens on hover / focus. A faint rule is always visible so it still reads as a link. */
+.text-link {
+    padding-bottom: 1px;
+    color: var(--color-primary);
+    text-decoration: none;
+    background-image:
+        linear-gradient(currentColor, currentColor),
+        linear-gradient(
+            color-mix(in srgb, currentColor 35%, transparent),
+            color-mix(in srgb, currentColor 35%, transparent)
+        );
+    background-repeat: no-repeat;
+    background-position:
+        left bottom,
+        left bottom;
+    background-size:
+        0 2px,
+        100% 1px;
+    transition:
+        color var(--duration-base) var(--ease-out),
+        background-size var(--duration-slow) var(--ease-out);
+}
+
+.text-link:hover,
+.text-link:focus-visible,
+.text-link[aria-expanded='true'] {
+    color: var(--color-primary-hover);
+    text-decoration: none;
+    background-size:
+        100% 2px,
+        100% 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .text-link {
+        transition: none;
+    }
+}

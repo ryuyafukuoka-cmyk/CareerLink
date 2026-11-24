@@ -5,6 +5,7 @@ import BranchedMenu from '@/components/BranchedMenu/BranchedMenu.jsx';
 import AnimatedNumber from '@/components/AnimatedNumber/AnimatedNumber.jsx';
 import BorderGlow from '@/components/BorderGlow/BorderGlow.jsx';
 import Breadcrumb from '@/components/Breadcrumb/Breadcrumb.jsx';
+import Badge, { RoleBadge, UserStatusBadge } from '@/components/Badge/Badge.jsx';
 import Button from '@/components/Button/Button.jsx';
 import Calendar from '@/components/Calendar/Calendar.jsx';
 import Checkbox from '@/components/Checkbox/Checkbox.jsx';
@@ -12,6 +13,7 @@ import Combobox from '@/components/Combobox/Combobox.jsx';
 import ConfirmDialog from '@/components/ConfirmDialog/ConfirmDialog.jsx';
 import DatePicker from '@/components/DatePicker/DatePicker.jsx';
 import Dialog from '@/components/Dialog/Dialog.jsx';
+import ExternalLink from '@/components/ExternalLink/ExternalLink.jsx';
 import Drawer from '@/components/Drawer/Drawer.jsx';
 import DropdownMenu from '@/components/DropdownMenu/DropdownMenu.jsx';
 import FuseButton from '@/components/FuseButton/FuseButton.jsx';
@@ -24,9 +26,13 @@ import Progress from '@/components/Progress/Progress.jsx';
 import RadioGroup from '@/components/RadioGroup/RadioGroup.jsx';
 import StageTracker from '@/components/StageTracker/StageTracker.jsx';
 import StatusMark from '@/components/StatusMark/StatusMark.jsx';
+import Switch from '@/components/Switch/Switch.jsx';
+import Tabs from '@/components/Tabs/Tabs.jsx';
+import TextLink from '@/components/TextLink/TextLink.jsx';
 import TextInput from '@/components/TextInput/TextInput.jsx';
 import ThemeToggle from '@/components/ThemeToggle/ThemeToggle.jsx';
 import { toast } from '@/components/Toast/toast.js';
+import Tooltip from '@/components/Tooltip/Tooltip.jsx';
 import { ROLES } from '@shared/definitions';
 import './GalleryPage.css';
 
@@ -122,6 +128,8 @@ function GalleryPage() {
     const [stackedOpen, setStackedOpen] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [draft, setDraft] = useState('');
+    const [active, setActive] = useState(true);
+    const [karteTab, setKarteTab] = useState('records');
     const [font, setFont] = useState(FONTS[0]?.value ?? '');
 
     function changeFont(next) {
@@ -311,6 +319,85 @@ function GalleryPage() {
                 <HoverCard content="三重県津市。公開済みの記録は3件です。">
                     <a href="#gallery">株式会社サンプル</a>
                 </HoverCard>
+            </Section>
+
+            <Section title="Tooltip">
+                <div className="gallery__row">
+                    <Tooltip content="企業・応募回は変更できません">
+                        <TextInput value="株式会社サンプル" disabled readOnly />
+                    </Tooltip>
+                    <Tooltip content="連続登録を避けるため、30秒あけてください" placement="bottom">
+                        <Button disabled>保存</Button>
+                    </Tooltip>
+                    <Tooltip content="応募日は「未応募・検討中」以外で必須です" focusable>
+                        <span>応募日 ⓘ</span>
+                    </Tooltip>
+                </div>
+            </Section>
+
+            <Section title="Badge（RoleBadge / UserStatusBadge）">
+                <div className="gallery__row">
+                    <RoleBadge role="student" />
+                    <RoleBadge role="instructor" />
+                    <RoleBadge role="admin" />
+                    <UserStatusBadge status="active" />
+                    <UserStatusBadge status="inactive" />
+                </div>
+                <div className="gallery__row">
+                    <Badge>neutral</Badge>
+                    <Badge tone="primary">primary</Badge>
+                    <Badge tone="info">info</Badge>
+                    <Badge tone="success">success</Badge>
+                    <Badge tone="warning">warning</Badge>
+                    <Badge tone="danger">danger</Badge>
+                    <Badge tone="info" size="sm">
+                        sm
+                    </Badge>
+                </div>
+            </Section>
+
+            <Section title="Switch">
+                <div className="gallery__row">
+                    <Switch
+                        label={active ? 'アカウント：有効' : 'アカウント：無効'}
+                        checked={active}
+                        onChange={(event) => setActive(event.target.checked)}
+                    />
+                    <Switch label="無効（disabled）" disabled />
+                    <Switch label="有効（disabled）" checked disabled readOnly />
+                </div>
+            </Section>
+
+            <Section title="Tabs（企業カルテ）">
+                <Tabs
+                    label="企業カルテ"
+                    value={karteTab}
+                    onChange={setKarteTab}
+                    items={[
+                        {
+                            value: 'records',
+                            label: '活動記録',
+                            content: <p>卒業年度ごとの活動記録</p>,
+                        },
+                        {
+                            value: 'interview',
+                            label: '面接情報',
+                            content: <p>面接質問と深掘り質問</p>,
+                        },
+                        { value: 'exam', label: '試験情報', content: <p>出題内容と対策情報</p> },
+                        { value: 'other', label: '無効なタブ', content: null, disabled: true },
+                    ]}
+                />
+            </Section>
+
+            <Section title="Link（ExternalLink / TextLink）">
+                <div className="gallery__row">
+                    <ExternalLink href="https://example.com/company/recruit?year=2027" />
+                    <ExternalLink href="https://example.co.jp">
+                        株式会社サンプルの公式サイト
+                    </ExternalLink>
+                    <TextLink to="/gallery.html">アプリ内リンク（そのまま移動）</TextLink>
+                </div>
             </Section>
 
             <Section title="Font（全体に反映）">

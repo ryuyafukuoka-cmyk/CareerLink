@@ -1,18 +1,115 @@
-/* Shared surface for floating panels (Combobox list, DatePicker, DropdownMenu, HoverCard). */
+/* Shared surface for floating panels (Combobox list, DatePicker, DropdownMenu, HoverCard).
+   Opening: the panel grows downward, then its items appear one by one.
+   Closing: the panel folds back up. Keep usePresence's exitMs (180) >= --popover-out. */
 .popover {
+    --popover-in: 240ms;
+    --popover-out: 160ms;
     position: absolute;
     z-index: var(--z-dropdown);
     background: var(--color-surface);
     border: var(--border-width) solid var(--color-border);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-md);
-    animation: popover-in var(--transition-base) both;
+    transform-origin: top;
 }
 
-@keyframes popover-in {
+/* The negative insets keep the shadow and focus rings from being clipped while it grows. */
+.popover[data-state='open'] {
+    animation: popover-grow var(--popover-in) var(--ease-out) backwards;
+}
+
+.popover[data-state='closed'] {
+    pointer-events: none;
+    animation: popover-fold var(--popover-out) var(--ease-in) forwards;
+}
+
+/* Items (give each a --i index: style={{ '--i': index }}) rise in one after another. */
+.popover__item {
+    animation: popover-item-in 220ms var(--ease-out) backwards;
+    animation-delay: calc(70ms + min(var(--i, 0), 10) * 32ms);
+}
+
+.popover[data-state='closed'] .popover__item {
+    animation: none;
+}
+
+/* Calendar: header, weekday row, each week and the footer build in order. */
+.popover .calendar__header,
+.popover .calendar__grid thead,
+.popover .calendar__grid tbody tr,
+.popover .calendar__footer {
+    animation: popover-item-in 220ms var(--ease-out) backwards;
+}
+
+.popover .calendar__header {
+    animation-delay: 60ms;
+}
+
+.popover .calendar__grid thead {
+    animation-delay: 100ms;
+}
+
+.popover .calendar__grid tbody tr:nth-child(1) {
+    animation-delay: 140ms;
+}
+
+.popover .calendar__grid tbody tr:nth-child(2) {
+    animation-delay: 175ms;
+}
+
+.popover .calendar__grid tbody tr:nth-child(3) {
+    animation-delay: 210ms;
+}
+
+.popover .calendar__grid tbody tr:nth-child(4) {
+    animation-delay: 245ms;
+}
+
+.popover .calendar__grid tbody tr:nth-child(5) {
+    animation-delay: 280ms;
+}
+
+.popover .calendar__grid tbody tr:nth-child(6) {
+    animation-delay: 315ms;
+}
+
+.popover .calendar__footer {
+    animation-delay: 350ms;
+}
+
+.popover[data-state='closed'] .calendar__header,
+.popover[data-state='closed'] .calendar__grid thead,
+.popover[data-state='closed'] .calendar__grid tbody tr,
+.popover[data-state='closed'] .calendar__footer {
+    animation: none;
+}
+
+@keyframes popover-grow {
+    from {
+        opacity: 0.4;
+        clip-path: inset(-4px -24px 100% -24px);
+    }
+    to {
+        opacity: 1;
+        clip-path: inset(-4px -24px -24px -24px);
+    }
+}
+
+@keyframes popover-fold {
+    from {
+        opacity: 1;
+        clip-path: inset(-4px -24px -24px -24px);
+    }
+    to {
+        opacity: 0;
+        clip-path: inset(-4px -24px 100% -24px);
+    }
+}
+
+@keyframes popover-item-in {
     from {
         opacity: 0;
-        transform: translateY(-4px) scale(0.98);
+        transform: translateY(-6px);
     }
     to {
         opacity: 1;
@@ -21,7 +118,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .popover {
+    .popover,
+    .popover__item,
+    .popover .calendar__header,
+    .popover .calendar__grid thead,
+    .popover .calendar__grid tbody tr,
+    .popover .calendar__footer {
         animation: none;
     }
 }

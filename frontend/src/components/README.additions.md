@@ -26,3 +26,30 @@ Shared pieces: `styles/popover.css` (floating panel surface), `hooks/useClickOut
 - `BorderGlow`: `as`, `active`. A light runs around the border. Use once per screen.
 - `DotField`: no props. Login-screen background; put it first inside a `position: relative` container.
 - `Checkbox` now draws its own box (spring tick). `RadioGroup` has a jelly press. `Loading` is a 3x3 lattice. All keep their props.
+
+## Functional components (Tooltip, Badge, Switch, Tabs)
+
+| Component | Props                                                                                            | Notes                                                                                                                     |
+| --------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `Tooltip` | `content`, `placement` (`top` / `bottom`), `delay` (250), `focusable`, `children`                | One short sentence. Set `focusable` when wrapping a disabled input or button. Empty `content` renders the child as it is. |
+| `Badge`   | `tone` (`neutral` / `primary` / `info` / `success` / `warning` / `danger`), `size` (`sm` / `md`) | Also exports `RoleBadge` (`role`) and `UserStatusBadge` (`status`). Stages and draft/completed stay with `StatusMark`.    |
+| `Switch`  | `label`, `checked`, `onChange`, `disabled`                                                       | Native event like `Checkbox`. For settings that apply right away (account active / inactive).                             |
+| `Tabs`    | `items [{value,label,content,disabled?}]`, `value`, `onChange(value)`, `defaultValue`, `label`   | Only the active panel renders. Left / Right / Home / End move between tabs. `onChange` gets the value.                    |
+
+Planned uses: `Tooltip` on locked fields, the 30-second cooldown and the application-date rule; `Badge` in the user list; `Switch` for C-201 / C-202; `Tabs` in the company karte.
+
+## Popup animation
+
+Popups (`Combobox` list, `DatePicker`, `DropdownMenu`, `HoverCard`) grow downward when they open, their items appear one by one, and they fold back up when they close. `Tooltip` fades in and out.
+
+- `hooks/usePresence.js`: `const { mounted, state } = usePresence(open, 180)`. Render the popup while `mounted`, and set `data-state={state}` on it. It stays in the page while the closing animation plays. With reduced motion it unmounts at once.
+- `styles/popover.css`: the `.popover` grow / fold animation. Put `popover__item` and `style={{ '--i': index }}` on each item to get the one-by-one build (the delay stops growing after the 10th).
+
+## Links
+
+| Component      | Props                           | Notes                                                                                                                                                           |
+| -------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ExternalLink` | `href` (http/https), `children` | Left click shows the real URL with 新しいタブで開く / リンクをコピー. Ctrl / Cmd / Shift / middle click still work. A non-http(s) `href` renders as plain text. |
+| `TextLink`     | `to`, `children`                | In-app (react-router) link. Same animated underline, no panel.                                                                                                  |
+
+Look: `styles/textLink.css` (`.text-link`). The underline draws in from the left and the color deepens on hover / focus.
