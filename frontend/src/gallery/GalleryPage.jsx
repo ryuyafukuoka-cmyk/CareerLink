@@ -37,7 +37,23 @@ const STAGES = [
     { value: 'offered', label: '内定' },
 ];
 
-const FONTS = [];
+const FONTS = [
+    {
+        value: "'Noto Sans JP'",
+        label: 'Noto Sans JP',
+        description: '標準的で読みやすい。ウェイト 400 / 500 / 700',
+    },
+    {
+        value: "'Zen Maru Gothic'",
+        label: 'Zen Maru Gothic',
+        description: '丸ゴシック。やわらかい印象。400 / 500 / 700',
+    },
+    {
+        value: "'Klee One'",
+        label: 'Klee One',
+        description: '手書き風の教科書体。400 / 600 のみ（太字は 600）',
+    },
+];
 const FONT_FALLBACK = ", 'Hiragino Sans', 'Yu Gothic UI', Meiryo, sans-serif";
 
 const SWATCHES = [
@@ -96,7 +112,7 @@ function GalleryPage() {
     const [stackedOpen, setStackedOpen] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [draft, setDraft] = useState('');
-    const [font, setFont] = useState(FONTS[0].value);
+    const [font, setFont] = useState(FONTS[0]?.value ?? '');
 
     function changeFont(next) {
         setFont(next);
