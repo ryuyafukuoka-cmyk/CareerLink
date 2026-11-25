@@ -1,5 +1,6 @@
 // リポジトリに MariaDB の接続プールとトランザクション処理を提供する。
 // SQLはリポジトリに置き、どこまでを1トランザクションにするかはサービスが決める（詳細設計の層のルール）。
+const { readFileSync } = require('node:fs');
 const mysql = require('mysql2/promise');
 const { config } = require('../common/config');
 
@@ -14,6 +15,13 @@ function getPool() {
             user: config.db.user,
             password: config.db.password,
             database: config.db.database,
+            ssl: process.env.DB_SSL_CA_FILE
+                ? {
+                      ca: readFileSync(process.env.DB_SSL_CA_FILE, 'utf8'),
+                      rejectUnauthorized: true,
+                      verifyIdentity: true,
+                  }
+                : undefined,
             connectionLimit: config.db.connectionLimit,
             charset: 'utf8mb4',
             timezone: '+09:00',
