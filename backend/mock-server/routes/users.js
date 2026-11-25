@@ -1,4 +1,4 @@
-// U-03 to U-07. (U-01 / U-02 live in routes/auth.js.)
+// ユーザー管理（U-03〜U-07）。U-01・U-02 は routes/auth.js で扱う。
 const express = require('express');
 const { ok, fail, requireRole } = require('../helpers');
 const { isValidGraduationYear } = require('../validators');
@@ -13,7 +13,7 @@ function usersRoutes(store) {
     const router = express.Router();
     const findOr404 = (userId) => store.getUser(userId) ?? fail(404, 'NOT_FOUND');
 
-    // U-03 GET /api/users?role=&status=&graduationYear=  (instructors and admins only)
+    // U-03 GET /api/users?role=&status=&graduationYear=（指導員・管理者のみ）。
     router.get('/users', (req, res) => {
         requireRole(req.actor, 'instructor', 'admin');
         const { role, status, graduationYear } = req.query;
@@ -24,14 +24,14 @@ function usersRoutes(store) {
         ok(res, items);
     });
 
-    // U-04 GET /api/users/:userId  (the person themself, instructors, admins)
+    // U-04 GET /api/users/:userId（本人・指導員・管理者のみ）。
     router.get('/users/:userId', (req, res) => {
         const { actor } = req;
         if (actor.userId !== req.params.userId) requireRole(actor, 'instructor', 'admin');
         ok(res, findOr404(req.params.userId));
     });
 
-    // U-05 PATCH /api/users/:userId/graduation-year  body: { year }  (instructors and admins; students only)
+    // U-05 PATCH /api/users/:userId/graduation-year。本文は { year }。指導員・管理者が学生の卒業年度を変更する。
     router.patch('/users/:userId/graduation-year', (req, res) => {
         requireRole(req.actor, 'instructor', 'admin');
         const user = findOr404(req.params.userId);
@@ -41,7 +41,7 @@ function usersRoutes(store) {
         ok(res, user);
     });
 
-    // U-06 PATCH /api/users/:userId/role  body: { role }  (admin only, never yourself, never the last admin)
+    // U-06 PATCH /api/users/:userId/role。本文は { role }。管理者のみ。自分自身の変更や、管理者が0人になる変更は禁止。
     router.patch('/users/:userId/role', (req, res) => {
         requireRole(req.actor, 'admin');
         const role = req.body?.role;
@@ -65,7 +65,7 @@ function usersRoutes(store) {
         ok(res, user);
     });
 
-    // U-07 PATCH /api/users/:userId/status  body: { status }  (instructors and admins; students only; not yourself)
+    // U-07 PATCH /api/users/:userId/status。本文は { status }。指導員・管理者が学生の利用状態を変更する。自分自身は変更できない。
     router.patch('/users/:userId/status', (req, res) => {
         requireRole(req.actor, 'instructor', 'admin');
         const status = req.body?.status;

@@ -1,11 +1,11 @@
-// MariaDB access. SQL lives only in repositories/; this file gives them a connection pool and a
-// transaction helper. Services own the transaction boundary (詳細設計 層のルール).
+// リポジトリに MariaDB の接続プールとトランザクション処理を提供する。
+// SQLはリポジトリに置き、どこまでを1トランザクションにするかはサービスが決める（詳細設計の層のルール）。
 const mysql = require('mysql2/promise');
 const { config } = require('../common/config');
 
 let pool = null;
 
-// The pool is created on first use and reused across Lambda invocations.
+// 接続プールは初回利用時に作成し、同じ Lambda 実行環境で再利用する。
 function getPool() {
     if (!pool) {
         pool = mysql.createPool({
@@ -17,7 +17,7 @@ function getPool() {
             connectionLimit: config.db.connectionLimit,
             charset: 'utf8mb4',
             timezone: '+09:00',
-            // Large ids and DATETIME(6) are returned as-is; dates as strings (formatted in services).
+            // 大きなIDと DATETIME(6) の精度を保つ。日時は文字列で受け取り、サービスで整形する。
             dateStrings: true,
             namedPlaceholders: false,
         });
@@ -25,14 +25,13 @@ function getPool() {
     return pool;
 }
 
-// Runs `sql` with `params` (always parameterized, never string-concatenated).
-// `executor` is a transaction connection from withTransaction, or omitted to use the pool.
+// SQLとパラメーターを分けて渡す。executor があればトランザクション接続を、省略時はプールを使う。
 async function query(sql, params = [], executor = getPool()) {
     const [rows] = await executor.query(sql, params);
     return rows;
 }
 
-// Runs fn(conn) in one transaction: commit on success, rollback on any error (and rethrow).
+// fn(conn) を1トランザクションで実行する。成功時はコミットし、例外時はロールバックして再送出する。
 async function withTransaction(fn) {
     const conn = await getPool().getConnection();
     try {
@@ -52,7 +51,7 @@ async function withTransaction(fn) {
     }
 }
 
-// MariaDB duplicate-key error (errno 1062).
+// MariaDB のキー重複エラー（エラー番号1062）。
 function isDuplicateEntry(err) {
     return err?.code === 'ER_DUP_ENTRY' || err?.errno === 1062;
 }

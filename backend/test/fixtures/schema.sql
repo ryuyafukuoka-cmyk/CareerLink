@@ -1,4 +1,4 @@
--- Integration test fixture: tables and reference data from the CareerLink DB design.
+-- 結合テスト用のテーブルと参照データ。CareerLink のDB設計に基づく。
 
 CREATE TABLE users (
     users_id INT UNSIGNED NOT NULL AUTO_INCREMENT,

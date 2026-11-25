@@ -1,11 +1,9 @@
-// RDS access for users, user_auth, roles and user_roles (DB設計). SQL lives here only.
-// Every function takes an optional `executor` (a transaction connection) as its last argument.
+// users、user_auth、roles、user_roles のSQLをまとめる（DB設計）。末尾の任意引数 executor にトランザクション接続を渡せる。
 const { query } = require('../db/pool');
 const { ROLES, USER_STATUSES } = require('../common/constants');
 
-// ASSUMPTION: roles.role_name holds the Japanese names written in the DB design
-// ("学生・指導員・管理者"). The DDL is still being written by the DB owner. If the seed data uses
-// other values, change only these two maps.
+// roles.role_name にはDB設計の日本語名（学生・指導員・管理者）が入る想定。
+// DB担当が用意する初期データの値が異なる場合は、次の2つの対応表を変更する。
 const ROLE_NAME_BY_ROLE = Object.freeze({
     [ROLES.STUDENT]: '学生',
     [ROLES.INSTRUCTOR]: '指導員',
@@ -22,7 +20,7 @@ const USER_SELECT = `
     JOIN user_roles ur ON ur.users_id = u.users_id
     JOIN roles r ON r.role_id = ur.role_id`;
 
-// DB row -> API `User` (userId is a string; graduationYear is number | null).
+// DBの行をAPIの User に変換する。userId は文字列、graduationYear は数値または null。
 function toUser(row) {
     const role = ROLE_BY_ROLE_NAME[row.roleName];
     if (!role) throw new Error(`Unknown role_name in roles table: ${row.roleName}`);
@@ -35,7 +33,7 @@ function toUser(row) {
     };
 }
 
-// Finds a user by the Cognito identity (issuer + sub). Returns User | null.
+// Cognito の識別情報（issuer と sub）でユーザーを取得する。該当しなければ null を返す。
 async function findByAuthIdentity(issuer, subject, executor) {
     const rows = await query(
         `${USER_SELECT}
@@ -47,13 +45,13 @@ async function findByAuthIdentity(issuer, subject, executor) {
     return rows.length ? toUser(rows[0]) : null;
 }
 
-// Finds a user by internal id (number). Returns User | null.
+// 数値の内部IDでユーザーを取得する。該当しなければ null を返す。
 async function findById(id, executor) {
     const rows = await query(`${USER_SELECT} WHERE u.users_id = ?`, [id], executor);
     return rows.length ? toUser(rows[0]) : null;
 }
 
-// filter: { role?, status?, graduationYear? } (already validated). Ordered by id.
+// 検証済みの任意条件 role、status、graduationYear で絞り込み、ID順に返す。
 async function list(filter = {}, executor) {
     const where = [];
     const params = [];
@@ -74,8 +72,8 @@ async function list(filter = {}, executor) {
     return rows.map(toUser);
 }
 
-// Creates users + user_auth + user_roles. Call inside one transaction (conn required).
-// Throws the DB duplicate-key error if (issuer, sub) already exists. Returns the new internal id.
+// users・user_auth・user_roles に1トランザクションで登録し、新しい内部IDを返す（conn 必須）。
+// 同じ issuer と sub がすでにあれば、DBのキー重複エラーを投げる。
 async function insertWithAuth(conn, { issuer, subject, displayName, role }) {
     const userResult = await query(
         'INSERT INTO users (users_name, graduation_year, active) VALUES (?, NULL, 1)',
@@ -99,7 +97,7 @@ async function insertWithAuth(conn, { issuer, subject, displayName, role }) {
     return id;
 }
 
-// Sets the graduation year only while it is still NULL. Returns true if it was set (U-02).
+// U-02。卒業年度が NULL の間だけ登録できる。実際に登録したら true を返す。
 async function setGraduationYearIfUnset(id, year, executor) {
     const result = await query(
         'UPDATE users SET graduation_year = ? WHERE users_id = ? AND graduation_year IS NULL',
@@ -132,8 +130,8 @@ async function updateRole(id, role, executor) {
     );
 }
 
-// Role changes are serialized by locking the admin role row. MUST be the first statement of the
-// transaction, so the reads after it see every earlier role change (F-001-02 排他制御).
+// 権限変更を順に処理するため、トランザクションの最初のSQLで管理者ロールの行をロックする。
+// これ以降の読み取りに先行する権限変更が反映される（F-001-02 排他制御）。
 async function lockRoleChanges(conn) {
     await query(
         'SELECT role_id FROM roles WHERE role_name = ? FOR UPDATE',
@@ -142,7 +140,7 @@ async function lockRoleChanges(conn) {
     );
 }
 
-// Number of active admins.
+// 有効な管理者の人数。
 async function countActiveAdmins(executor) {
     const rows = await query(
         `SELECT COUNT(*) AS n

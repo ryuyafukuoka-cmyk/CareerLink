@@ -1,13 +1,11 @@
-// 30-second limit between two new registrations of the same kind by the same operator
-// (機能詳細設計 共通仕様). Used by RD-01 ('round') and, later, R-01 ('activityRecord').
-// Admin proxy creation counts for the admin (the operator), not for the target student.
+// 同じ操作者による同種の新規登録は30秒間隔とする（機能詳細設計の共通仕様）。応募回は round（RD-01）、活動記録は activityRecord（R-01）。
+// 管理者の代理登録では、対象の学生ではなく操作した管理者の登録時刻を使う。
 const { AppError, forbidden } = require('../common/errors');
 const cooldownRepository = require('../repositories/cooldownRepository');
 
 const COOLDOWN_MICROS = 30 * 1000 * 1000;
 
-// Must run inside the creation transaction (conn), after the company row is locked
-// (lock order: company row, then the operator's users row).
+// 作成と同じトランザクション（conn）内で、企業行をロックしてから呼ぶ。企業行 → 操作者の users 行の順でロックする。
 async function assertCreationCooldown(conn, actor, kind) {
     const elapsed = await cooldownRepository.lockAndGetElapsedMicros(
         conn,
@@ -21,7 +19,7 @@ async function assertCreationCooldown(conn, actor, kind) {
     }
 }
 
-// Call in the same transaction, right after the new row is inserted.
+// 新しい行を挿入した直後に、同じトランザクション内で呼ぶ。
 async function markCreationSucceeded(conn, actor, kind) {
     await cooldownRepository.markCreated(conn, Number(actor.userId), kind);
 }

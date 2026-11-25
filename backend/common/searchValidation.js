@@ -1,5 +1,5 @@
-// Query rules for search (S-01) and the company karte (K-01 to K-03). Error details use
-// { field, messageId } (API設計 §1); every error is reported at once.
+// 検索（S-01）と企業別カルテ（K-01〜K-03）のクエリを検証する。
+// 不正な項目は { field, messageId } の形式でまとめて返す（API設計 §1）。
 const { ACTIVITY_TYPE_VALUES } = require('./constants');
 const { validationError } = require('./errors');
 const { isRealDate, toDbDate } = require('./dateUtil');
@@ -10,7 +10,7 @@ const MAX_KEYWORD_TOKENS = 10;
 
 const single = (v) => (v === undefined || typeof v === 'string' ? v : null);
 
-// graduationYear: 4 digits, 2000-2100. Returns the number, undefined (not given) or null (bad).
+// graduationYear は2000〜2100の4桁の年。正常なら数値、未指定なら undefined、不正なら null を返す。
 function parseYear(raw) {
     if (raw === undefined) return undefined;
     if (raw === null || !/^\d{4}$/.test(raw)) return null;
@@ -18,7 +18,7 @@ function parseYear(raw) {
     return year >= 2000 && year <= 2100 ? year : null;
 }
 
-// S-01 query -> normalized filter. Throws VALIDATION_ERROR.
+// S-01 のクエリを検索条件に変換し、不正な場合は VALIDATION_ERROR を投げる。
 function parseSearchQuery(query = {}) {
     const details = [];
 
@@ -60,12 +60,12 @@ function parseSearchQuery(query = {}) {
             dates[key] = raw;
         }
     }
-    // Real dates compare correctly as YYYY/MM/DD strings.
+    // 実在する日付にそろえた後は、YYYY/MM/DD の文字列順で日付を比較できる。
     if (dates.conductedFrom && dates.conductedTo && dates.conductedFrom > dates.conductedTo) {
         details.push({ field: 'conductedFrom', messageId: 'E-208' });
     }
 
-    // Keyword: split on any run of whitespace (half/full-width space, tab...). Blank = no keyword.
+    // キーワードは連続する空白（半角・全角スペースやタブなど）で分割する。空白だけなら未指定とする。
     const rawKeyword = single(query.keyword);
     let tokens = [];
     if (rawKeyword === null || (rawKeyword && rawKeyword.length > MAX_KEYWORD_LENGTH)) {
@@ -111,7 +111,7 @@ function parseSearchQuery(query = {}) {
     };
 }
 
-// K-01 to K-03 query: graduationYear?, activityType? (one value).
+// K-01〜K-03 の任意の条件は graduationYear と activityType（1種類）。
 function parseKarteQuery(query = {}) {
     const details = [];
     const graduationYear = parseYear(single(query.graduationYear));

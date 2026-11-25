@@ -1,5 +1,4 @@
-// RDS access for activities and their per-type tables (DB設計). SQL lives here only.
-// Every function takes an optional `executor` (a transaction connection) as its last argument.
+// activities と活動種別ごとのテーブルのSQLをまとめる（DB設計）。末尾の任意引数 executor にトランザクション接続を渡せる。
 const { query } = require('../db/pool');
 const {
     ACTIVITY_TYPE_BY_ID,
@@ -11,14 +10,14 @@ const {
 } = require('../common/constants');
 const { fromDbDate, fromDbDateTime } = require('../common/dateUtil');
 
-// follow_up_questions holds a JSON array string. Old data may be newline separated.
+// follow_up_questions はJSON配列を文字列で保持する。旧データには改行区切りの形式もある。
 function parseFollowUps(value) {
     if (value === null || value === undefined || value === '') return [];
     try {
         const parsed = JSON.parse(value);
         if (Array.isArray(parsed)) return parsed.map(String);
     } catch {
-        // fall through to the legacy format
+        // 旧形式の読み取りに進む。
     }
     return String(value)
         .split('\n')
@@ -26,8 +25,8 @@ function parseFollowUps(value) {
         .filter(Boolean);
 }
 
-// Returns the record row as an API-shaped object, or null. forUpdate locks the activity row (and
-// its application row): lock the company row first (company -> application -> activity).
+// 記録をAPIの形式で返し、なければ null を返す。forUpdate は活動記録と応募回の行をロックする。
+// 先に企業行をロックし、企業 → 応募回 → 活動記録の順序を守る。
 async function findById(id, executor, { forUpdate = false } = {}) {
     const rows = await query(
         `SELECT a.activity_id AS id, a.application_id AS roundId, ap.company_id AS companyId,
@@ -57,7 +56,7 @@ async function findById(id, executor, { forUpdate = false } = {}) {
     };
 }
 
-// Activity types and sections of a record, in API shape (only the types the record has).
+// 記録に含まれる活動種別と、その種別のセクションだけをAPIの形式で取得する。
 async function loadContent(activityId, executor) {
     const ids = [activityId];
     const details = await query(
@@ -156,7 +155,7 @@ async function updateActivity(conn, id, { dbDate, status }, userId) {
     );
 }
 
-// Removes the per-type rows and activity_details of one activity (children first).
+// 1件の活動記録に属する種別別の行と activity_details を、子から順に削除する。
 async function deleteContent(conn, activityId) {
     const VIA = 'JOIN activity_details ad ON ad.activity_detail_id = t.activity_detail_id';
     await query(
@@ -172,8 +171,7 @@ async function deleteContent(conn, activityId) {
     await query('DELETE FROM activity_details WHERE activity_id = ?', [activityId], conn);
 }
 
-// Replaces the content: one activity_details row (and per-type row) for every selected type.
-// `content` is the normalized value from parseRecordContent.
+// parseRecordContent で正規化した内容に置き換える。選択した種別ごとに activity_details と種別別テーブルへ1行ずつ保存する。
 async function replaceContent(conn, activityId, { activityTypes, sections }) {
     await deleteContent(conn, activityId);
     for (const type of activityTypes) {
@@ -254,14 +252,14 @@ async function replaceContent(conn, activityId, { activityTypes, sections }) {
     }
 }
 
-// Physically deletes the record and everything under it (R-09). Call inside one transaction.
+// R-09。活動記録とその配下のデータを物理削除する。1トランザクション内で呼ぶ。
 async function deleteWithChildren(conn, activityId) {
     await deleteContent(conn, activityId);
     await query('DELETE FROM activity_history WHERE activity_id = ?', [activityId], conn);
     await query('DELETE FROM activities WHERE activity_id = ?', [activityId], conn);
 }
 
-// One history row per edit: editor and time only (DB設計 activity_history).
+// 編集のたびに履歴を1行追加し、編集者と日時だけを記録する（DB設計 activity_history）。
 async function insertHistory(conn, activityId, userId) {
     await query(
         'INSERT INTO activity_history (activity_id, updated_by) VALUES (?, ?)',
@@ -270,8 +268,8 @@ async function insertHistory(conn, activityId, userId) {
     );
 }
 
-// ActivityRecordSummary[]. filter: { ownerId?: number, status?: 'draft' | 'completed' }.
-// Drafts first (updated desc), then completed (conducted date desc).
+// 任意の ownerId と status（draft または completed）で絞り込み、ActivityRecordSummary の配列を返す。
+// 下書きを更新日時の降順で先に並べ、その後に完了済み記録を実施日の降順で並べる。
 async function listSummaries({ ownerId, status } = {}, executor) {
     const where = [];
     const params = [];
@@ -321,7 +319,7 @@ async function listSummaries({ ownerId, status } = {}, executor) {
     }));
 }
 
-// S-02 extras for the detail screen: company, owner and last editor names, edit history.
+// S-02 の詳細画面に必要な企業名、所有者名、最終編集者名、編集履歴を取得する。
 async function findDetailExtras(id, executor) {
     const rows = await query(
         `SELECT c.company_id AS companyId, c.company_name AS companyName,

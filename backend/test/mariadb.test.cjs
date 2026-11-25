@@ -90,7 +90,7 @@ test('user administration logs success and failure and rolls back when a success
     const admin = await login('user-admin', 'instructor');
     const teacher = await login('user-teacher', 'instructor');
     const student = await login('user-student');
-    // The first admin is provisioned outside the API.
+    // 初期管理者はAPIの外で登録する。
     await api.pool.query(
         "UPDATE user_roles SET role_id=(SELECT role_id FROM roles WHERE role_name='管理者') WHERE users_id=?",
         [admin.id],

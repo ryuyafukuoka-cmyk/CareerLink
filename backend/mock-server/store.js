@@ -1,8 +1,8 @@
-// In-memory store loaded from the frontend mock data. Resets on every server restart.
+// フロントエンドのモックデータをメモリに読み込む。サーバーを再起動すると初期状態に戻る。
 
 const { fail } = require('./helpers');
 
-// 30-second limit for new rounds (RD-01) and new records (R-01). MOCK_COOLDOWN_MS can shorten it for testing.
+// 応募回（RD-01）と活動記録（R-01）の作成間隔は30秒。テスト時は MOCK_COOLDOWN_MS で短縮できる。
 const COOLDOWN_MS = Number(process.env.MOCK_COOLDOWN_MS ?? 30000);
 
 const BASE_TIME = Date.parse('2026-07-01T00:00:00+09:00');
@@ -22,7 +22,7 @@ function createStore(data) {
         operationLogs: structuredClone(data.operationLogs),
     };
 
-    // Hidden per-company fields: change-detection version (for C-05/C-06) and update time (for ordering).
+    // 企業ごとに、削除確認用の変更番号（C-05・C-06）と並べ替え用の更新日時を内部で保持する。
     const companyMeta = new Map(
         store.companies.map((c, i) => [
             c.companyId,
@@ -37,8 +37,8 @@ function createStore(data) {
 
     store.nextId = (items, key) => String(maxId(items, key) + 1);
 
-    // Call on EVERY change to a company or its related data (company, rounds, records).
-    // Bumps the deletion version so a stale delete confirmation is rejected with 409.
+    // 企業本体・応募回・活動記録を変更するたびに削除確認用の番号を進める。
+    // 古い番号による削除要求は409で拒否する。
     store.touchCompany = (companyId) => {
         const meta = companyMeta.get(companyId);
         if (!meta) return;
@@ -51,7 +51,7 @@ function createStore(data) {
         companyMeta.set(company.companyId, { deletionVersion: 0, updatedAt: Date.now() });
     };
 
-    // Physically deletes a company and all related data (mirrors F-006 company deletion).
+    // 企業と関連データをまとめて物理削除する（F-006 の企業削除に対応）。
     store.removeCompany = (companyId) => {
         const roundIds = new Set(
             store.rounds.filter((r) => r.companyId === companyId).map((r) => r.applicationRoundId),
@@ -67,8 +67,8 @@ function createStore(data) {
         companyMeta.delete(companyId);
     };
 
-    // 30-second limit: per operator and per kind ('round' = RD-01, 'record' = R-01, separate slots).
-    // Only a successful creation starts the clock (call markCreated after saving).
+    // 30秒制限は操作者ごとに、応募回（round・RD-01）と活動記録（record・R-01）を分けて管理する。
+    // 作成成功時だけ時間を記録するため、保存後に markCreated を呼ぶ。
     const lastCreated = new Map();
     store.assertCooldown = (userId, kind) => {
         const last = lastCreated.get(`${userId}|${kind}`);
@@ -82,7 +82,7 @@ function createStore(data) {
     };
     store.markCreated = (userId, kind) => lastCreated.set(`${userId}|${kind}`, Date.now());
 
-    // Round history: editor and time only (names are stored as in the mock data).
+    // 応募回の履歴には編集者と日時のみを記録する。氏名はモックデータの形式で保持する。
     store.addRoundHistory = (applicationRoundId, editorUserId) => {
         store.roundHistory.push({
             applicationRoundId,
@@ -92,7 +92,7 @@ function createStore(data) {
         });
     };
 
-    // Operation log (newest first). Never stores record bodies.
+    // 操作履歴は新しい順。活動記録の本文は含めない。
     store.addLog = ({
         operatorUserId,
         operationType,

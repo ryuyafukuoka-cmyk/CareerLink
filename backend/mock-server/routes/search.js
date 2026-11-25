@@ -1,4 +1,4 @@
-// S-01 record search and S-03 graduation years. Completed records only: drafts and selection info never appear.
+// 活動記録検索（S-01）と卒業年度一覧（S-03）。対象は完了済み記録のみ。下書きや選考情報は含めない。
 const express = require('express');
 const { ok, fail } = require('../helpers');
 const { isRealDate, parsePage } = require('../validators');
@@ -13,7 +13,7 @@ const list = (raw) =>
         .map((v) => v.trim())
         .filter(Boolean);
 
-// Texts searched by keyword: question text, answer, exam content, and all impressions.
+// キーワード検索の対象は質問文、回答、試験内容、各種別の感想。
 function searchableTexts(record) {
     const s = record.sections ?? {};
     const texts = [];
@@ -25,7 +25,7 @@ function searchableTexts(record) {
     return texts.filter((t) => typeof t === 'string' && t !== '');
 }
 
-// Parses the S-01 query. Reports every error at once as { field, messageId }.
+// S-01 のクエリを解析する。項目ごとのエラーを { field, messageId } の形式でまとめて返す。
 function parseQuery(query) {
     const details = [];
     const page = parsePage(query.page);
@@ -106,7 +106,7 @@ function searchRoutes(store) {
                 if (f.graduationYear !== undefined && owner.graduationYear !== f.graduationYear) {
                     return false;
                 }
-                // Same condition: OR. Different conditions: AND.
+                // 同じ条件内の値は OR、異なる条件同士は AND で組み合わせる。
                 if (
                     f.activityTypes.length > 0 &&
                     !r.activityTypes.some((t) => f.activityTypes.includes(t))
@@ -123,7 +123,7 @@ function searchRoutes(store) {
                 }
                 if (f.tokens.length > 0) {
                     const texts = searchableTexts(r);
-                    // Tokens: AND. Fields: OR. Case-insensitive.
+                    // 検索語はすべて一致する必要があり、各語はいずれかの項目で一致すればよい。大文字・小文字は区別しない。
                     const hit = (token) =>
                         texts.some((t) =>
                             f.exact
@@ -139,7 +139,7 @@ function searchRoutes(store) {
                     String(b.conductedOn ?? '').localeCompare(String(a.conductedOn ?? '')) ||
                     Number(b.recordId) - Number(a.recordId),
             )
-            // Summary only: no names, no excerpts, no selection info.
+            // 一覧には要約だけを返し、氏名、本文の抜粋、選考情報は含めない。
             .map((r) => ({
                 recordId: r.recordId,
                 companyId: r.companyId,
@@ -158,7 +158,7 @@ function searchRoutes(store) {
         });
     });
 
-    // S-03 GET /api/graduation-years: years that have completed records, newest first.
+    // S-03 GET /api/graduation-years。完了済み記録がある卒業年度を新しい順に返す。
     router.get('/graduation-years', (req, res) => {
         const years = new Set(
             store.records

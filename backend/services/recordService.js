@@ -1,5 +1,4 @@
-// Activity record services (F-004-01 to F-004-03) and the record detail (F-005-02, S-02).
-// R-01 to R-09 and S-02.
+// 活動記録の操作（F-004-01〜F-004-03、R-01〜R-09）と詳細取得（F-005-02、S-02）を扱う。
 const { ROLES } = require('../common/constants');
 const { forbidden, notFound, conflict, validationError } = require('../common/errors');
 const { parseId } = require('../common/validation');
@@ -21,7 +20,7 @@ const { assertCreationCooldown, markCreationSucceeded } = require('./creationCoo
 
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isOwner = (actor, record) => actor.userId === record.ownerUserId;
-// Drafts (and deleting): the owner and admins. Completed edits: also instructors.
+// 下書きの編集と記録の削除は所有者・管理者のみ。完了済み記録は指導員も編集できる。
 const isOwnerOrAdmin = (actor, record) => isOwner(actor, record) || actor.role === ROLES.ADMIN;
 
 function toActivityRecord(record, content) {
@@ -47,10 +46,8 @@ async function loadRecord(param) {
     return { id, record };
 }
 
-// R-01 createActivityRecord. Order: mode (400) -> role (403) -> owner (403/404) -> company lock
-// (404) -> round (404/403) -> content (400) -> 30-second limit (429) -> save.
-// The company row is locked first (same order as RD-04), so the round's stage cannot change
-// between the category check and the insert.
+// R-01 createActivityRecord。mode（400）、権限（403）、所有者（403・404）、企業ロック（404）、応募回（404・403）、内容（400）、30秒制限（429）の順に確認して保存する。
+// RD-04 と同じく企業行を最初にロックするため、カテゴリ検証から登録までの間に応募回の選考段階は変わらない。
 async function createActivityRecord(actor, body) {
     const entry = {
         operatorUserId: actor.userId,
@@ -104,7 +101,7 @@ async function saveActivityRecord(actor, body, entry) {
         const round = await roundRepository.findById(roundId, conn);
         if (!round) throw notFound();
         if (round.studentUserId !== ownerUserId || round.companyId !== String(companyId)) {
-            throw forbidden(); // someone else's round, or a round of another company
+            throw forbidden(); // 他人の応募回、または別の企業に属する応募回。
         }
 
         const content = parseRecordContent(input, mode, round.stage);
@@ -116,7 +113,7 @@ async function saveActivityRecord(actor, body, entry) {
             { roundId, dbDate: content.conductedOn && toDbDate(content.conductedOn), status },
             Number(actor.userId),
         );
-        // Set before this point: the owner comes from the round; created_by = the operator.
+        // 所有者は応募回から取得済み。created_by には実際の操作者を記録する。
         await recordRepository.replaceContent(conn, id, content);
         await companyRepository.bumpDeletionVersion(conn, companyId);
         await markCreationSucceeded(conn, actor, 'activityRecord');
@@ -127,13 +124,13 @@ async function saveActivityRecord(actor, body, entry) {
     });
 }
 
-// R-02 listOwnActivityRecords: drafts (updated desc) first, then completed (date desc).
+// R-02 listOwnActivityRecords。自分の下書きを更新日時の降順で先に並べ、その後に完了済み記録を実施日の降順で並べる。
 async function listOwnActivityRecords(actor) {
     return recordRepository.listSummaries({ ownerId: Number(actor.userId) });
 }
 
-// R-03 listDrafts: a student only their own, an admin anyone's (all students when userId is
-// omitted), never an instructor.
+// R-03 listDrafts。学生は自分の下書きのみ、管理者は任意の学生の下書きを取得できる。
+// 管理者が userId を省略すると全学生が対象となる。指導員には許可しない。
 async function listDrafts(actor, query = {}) {
     requireRole(actor, [ROLES.STUDENT, ROLES.ADMIN]);
     const raw = query.userId;
@@ -155,7 +152,7 @@ async function listDrafts(actor, query = {}) {
     return recordRepository.listSummaries({ ownerId, status: 'draft' });
 }
 
-// R-04 getRecordForEdit: a draft for its owner / admins, a completed record also for instructors.
+// R-04 getRecordForEdit。下書きは所有者と管理者が編集用に取得でき、完了済み記録は指導員も取得できる。
 async function getRecordForEdit(actor, param) {
     const { id, record } = await loadRecord(param);
     const allowed =
@@ -166,16 +163,15 @@ async function getRecordForEdit(actor, param) {
     return toActivityRecord(record, await recordRepository.loadContent(id));
 }
 
-// Shared by R-05 (save draft), R-06 (complete) and R-07 (edit a completed record).
-// Order: 404 -> role/owner (403) -> state (409) -> immutable fields and content (400).
-// company, round and owner can never change (400 when a different value is sent).
+// 下書き保存（R-05）、完了（R-06）、完了済み記録の編集（R-07）の共通処理。
+// 存在（404）、権限・所有者（403）、状態（409）、変更不可の項目と入力内容（400）の順に確認する。企業・応募回・所有者の変更は400で拒否する。
 async function saveExisting(actor, param, body, options) {
     const id = parseId(param);
     const entry = {
         operatorUserId: actor.userId,
         operationType: options.operationType,
         targetType: 'record',
-        // operation_logs.target_id is an INT UNSIGNED.
+        // operation_logs.target_id の型は INT UNSIGNED。
         targetId: id !== null && id <= 0xffffffff ? id : null,
     };
     try {
@@ -203,11 +199,11 @@ async function updateExistingRecord(actor, param, body, options, entry) {
     const parseRecordContent = await loadRecordContentParser();
 
     return withTransaction(async (conn) => {
-        // Lock order: company row, then the record (and its round).
+        // 企業行を先にロックしてから、活動記録とその応募回をロックする。
         if (!(await companyRepository.lockById(conn, Number(first.companyId)))) throw notFound();
         const record = await recordRepository.findById(id, conn, { forUpdate: true });
         if (!record) throw notFound();
-        if (record.status !== from) throw conflict(); // changed while we waited for the lock
+        if (record.status !== from) throw conflict(); // ロックの取得を待つ間に記録が変更された場合。
 
         const round = await roundRepository.findById(Number(record.applicationRoundId), conn);
         const content = parseRecordContent(input, mode, round.stage);
@@ -231,7 +227,7 @@ async function updateExistingRecord(actor, param, body, options, entry) {
     });
 }
 
-// R-05 saveDraft: draft stays draft (409 when already completed).
+// R-05 saveDraft。下書き状態のまま保存する。すでに完了済みなら409を返す。
 const saveDraft = (actor, param, body) =>
     saveExisting(actor, param, body, {
         operationType: 'saveDraft',
@@ -241,7 +237,7 @@ const saveDraft = (actor, param, body) =>
         withHistory: false,
     });
 
-// R-06 completeActivityRecord: draft -> completed (400 keeps it a draft; 409 when completed).
+// R-06 completeActivityRecord。下書きを完了済みにする。入力不備（400）なら下書きのまま、すでに完了済みなら409を返す。
 const completeActivityRecord = (actor, param, body) =>
     saveExisting(actor, param, body, {
         operationType: 'completeActivityRecord',
@@ -251,8 +247,8 @@ const completeActivityRecord = (actor, param, body) =>
         withHistory: false,
     });
 
-// R-07 updateActivityRecord: edit a completed record, status stays completed (409 for a draft).
-// Instructors may edit; the edit is added to the history (editor and time only).
+// R-07 updateActivityRecord。完了済み記録は完了状態のまま編集し、下書きなら409を返す。
+// 指導員も編集できる。履歴には編集者と日時だけを追加する。
 const updateActivityRecord = (actor, param, body) =>
     saveExisting(actor, param, body, {
         operationType: 'updateActivityRecord',
@@ -262,7 +258,7 @@ const updateActivityRecord = (actor, param, body) =>
         withHistory: true,
     });
 
-// R-08 getDeleteConfirmInfo: the owner and admins only (draft or completed).
+// R-08 getDeleteConfirmInfo。下書き・完了済みともに、削除確認情報を取得できるのは所有者と管理者のみ。
 async function getDeleteConfirmInfo(actor, param) {
     const { id, record } = await loadRecord(param);
     if (!isOwnerOrAdmin(actor, record)) throw forbidden();
@@ -276,15 +272,15 @@ async function getDeleteConfirmInfo(actor, param) {
     };
 }
 
-// R-09 deleteActivityRecord: physical delete of the record and everything under it, in one
-// transaction. Company master, users and the round stay.
+// R-09 deleteActivityRecord。活動記録とその配下のデータを1トランザクションで物理削除する。
+// 企業マスタ・ユーザー・応募回は残す。
 async function deleteActivityRecord(actor, param) {
     const requestedId = parseId(param);
     const entry = {
         operatorUserId: actor.userId,
         operationType: 'deleteActivityRecord',
         targetType: 'record',
-        // operation_logs.target_id is an INT UNSIGNED.
+        // operation_logs.target_id の型は INT UNSIGNED。
         targetId: requestedId !== null && requestedId <= 0xffffffff ? requestedId : null,
     };
 
@@ -314,8 +310,8 @@ async function deleteActivityRecord(actor, param) {
     }
 }
 
-// S-02 getRecordDetail: a draft only for its owner / admins (403), completed for everyone.
-// Poster / editor names are null for other students. Selection stage / notes are never included.
+// S-02 getRecordDetail。下書きは所有者・管理者だけに許可し、それ以外は403。完了済み記録は全利用者が閲覧できる。
+// 他の学生には投稿者名・編集者名を null で返す。選考段階・備考は含めない。
 async function getRecordDetail(actor, param) {
     const { id, record } = await loadRecord(param);
     if (record.status === 'draft' && !isOwnerOrAdmin(actor, record)) throw forbidden();

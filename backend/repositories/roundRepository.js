@@ -1,5 +1,4 @@
-// RDS access for applications and selection_history (DB設計). SQL lives here only.
-// Every function takes an optional `executor` (a transaction connection) as its last argument.
+// applications と selection_history のSQLをまとめる（DB設計）。末尾の任意引数 executor にトランザクション接続を渡せる。
 const { query } = require('../db/pool');
 const { STAGE_BY_ID, ACTIVITY_TYPE_BY_ID, RECORD_STATUS_BY_VALUE } = require('../common/constants');
 const { fromDbDate, fromDbDateTime } = require('../common/dateUtil');
@@ -10,7 +9,7 @@ const ROUND_SELECT = `
            ap.selection_notes AS statusNote
     FROM applications ap`;
 
-// DB row -> API `ApplicationRound` (ids are strings, date is YYYY/MM/DD or null).
+// DBの行をAPIの ApplicationRound に変換する。IDは文字列、日付は YYYY/MM/DD または null。
 function toRound(row) {
     return {
         applicationRoundId: String(row.id),
@@ -22,7 +21,7 @@ function toRound(row) {
     };
 }
 
-// Returns ApplicationRound | null. forUpdate (in a transaction) locks the row.
+// 応募回があれば ApplicationRound、なければ null を返す。トランザクション内で forUpdate を指定すると行をロックする。
 async function findById(id, executor, { forUpdate = false } = {}) {
     const rows = await query(
         `${ROUND_SELECT} WHERE ap.application_id = ?${forUpdate ? ' FOR UPDATE' : ''}`,
@@ -32,7 +31,7 @@ async function findById(id, executor, { forUpdate = false } = {}) {
     return rows.length ? toRound(rows[0]) : null;
 }
 
-// RD-02. filter: { studentId?: number, companyId?: number }. Newest round first.
+// RD-02。任意の studentId と companyId で絞り込み、新しい応募回から返す。
 async function list({ studentId, companyId } = {}, executor) {
     const where = [];
     const params = [];
@@ -53,7 +52,7 @@ async function list({ studentId, companyId } = {}, executor) {
     return rows.map(toRound);
 }
 
-// RD-01. New rounds always start at stage 1 (considering). dbDate: 'YYYY-MM-DD' | null.
+// RD-01。新しい応募回の初期段階は常に1（considering）。dbDate は YYYY-MM-DD または null。
 async function insert(conn, { ownerId, companyId, dbDate }, userId) {
     const result = await query(
         `INSERT INTO applications
@@ -65,7 +64,7 @@ async function insert(conn, { ownerId, companyId, dbDate }, userId) {
     return result.insertId;
 }
 
-// RD-04. All three values are final (the service merged them with the current row).
+// RD-04。サービス側で現在の行と入力を突き合わせた後の3項目を保存する。
 async function update(conn, id, { statusId, statusNote, dbDate }, userId) {
     await query(
         `UPDATE applications
@@ -77,7 +76,7 @@ async function update(conn, id, { statusId, statusNote, dbDate }, userId) {
     );
 }
 
-// One history row per change: editor and time only, never old values (DB設計 selection_history).
+// 変更のたびに履歴を1行追加する。記録するのは編集者と日時だけで、変更前の値は含めない（DB設計 selection_history）。
 async function insertHistory(conn, applicationId, userId) {
     await query(
         'INSERT INTO selection_history (application_id, updated_by) VALUES (?, ?)',
@@ -86,7 +85,7 @@ async function insertHistory(conn, applicationId, userId) {
     );
 }
 
-// RD-06. Newest first.
+// RD-06。履歴を新しい順に返す。
 async function listHistory(applicationId, executor) {
     const rows = await query(
         `SELECT sh.updated_by AS editorId, u.users_name AS editorName, CONVERT_TZ(sh.updated_at, @@session.time_zone, '+09:00') AS editedAt
@@ -104,7 +103,7 @@ async function listHistory(applicationId, executor) {
     }));
 }
 
-// RD-05. Records of the round as ActivityRecordSummary[]; drafts only when includeDrafts.
+// RD-05。応募回の活動記録を ActivityRecordSummary の配列で返す。includeDrafts が有効なときだけ下書きも含める。
 async function listRecords(applicationId, includeDrafts, executor) {
     const rows = await query(
         `SELECT a.activity_id AS id, c.company_name AS companyName,
@@ -142,7 +141,7 @@ async function listRecords(applicationId, includeDrafts, executor) {
     }));
 }
 
-// True when an interview question of this round has no category (RD-04 / E-216).
+// この応募回の面接質問にカテゴリ未設定のものがあれば true を返す（RD-04・E-216）。
 async function hasUncategorizedQuestions(applicationId, executor) {
     const rows = await query(
         `SELECT 1

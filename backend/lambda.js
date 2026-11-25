@@ -1,5 +1,5 @@
-// AWS Lambda entry point. API Gateway (HTTP API, JWT authorizer, proxy integration) -> this
-// handler -> Express. app.listen() is never called here.
+// AWS Lambda の入口。API Gateway の HTTP API が JWT を検証し、プロキシ統合で受けたイベントを Express に渡す。
+// Lambda では app.listen() を呼ばない。
 const serverlessExpress = require('@codegenie/serverless-express');
 const { createApp } = require('./app');
 const { authenticate } = require('./authorization/authenticate');
