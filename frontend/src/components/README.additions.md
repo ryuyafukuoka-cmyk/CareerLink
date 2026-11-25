@@ -47,9 +47,9 @@ Popups (`Combobox` list, `DatePicker`, `DropdownMenu`, `HoverCard`) grow downwar
 
 ## Links
 
-| Component      | Props                           | Notes                                                                                                                                                           |
-| -------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ExternalLink` | `href` (http/https), `children` | Left click shows the real URL with 新しいタブで開く / リンクをコピー. Ctrl / Cmd / Shift / middle click still work. A non-http(s) `href` renders as plain text. |
-| `TextLink`     | `to`, `children`                | In-app (react-router) link. Same animated underline, no panel.                                                                                                  |
+| Component      | Props                           | Notes                                                                                                                                                                                                                          |
+| -------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ExternalLink` | `href` (http/https), `children` | Left click opens a new tab. Hover / focus shows the real URL (a long URL slides sideways with faded edges). Right click shows our own menu: URL, 新しいタブで開く, リンクをコピー. A non-http(s) `href` renders as plain text. |
+| `TextLink`     | `to`, `children`                | In-app (react-router) link. Same animated underline. Left click navigates in the same tab. Right click shows the same custom menu (full URL, 新しいタブで開く, リンクをコピー).                                                |
 
-Look: `styles/textLink.css` (`.text-link`). The underline draws in from the left and the color deepens on hover / focus.
+Right-click menu: `components/LinkMenu/useLinkMenu.jsx` (shared by both). Look: `styles/textLink.css` (`.text-link`). The underline draws in from the left and the color deepens on hover / focus.

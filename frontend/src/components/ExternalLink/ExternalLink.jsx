@@ -1,130 +1,126 @@
-import { useCallback, useRef, useState } from 'react';
-import { Check, Copy, ExternalLink as OpenIcon } from 'lucide-react';
-import { useClickOutside } from '@/hooks/useClickOutside.js';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { useLinkMenu } from '@/components/LinkMenu/useLinkMenu.jsx';
 import { usePresence } from '@/hooks/usePresence.js';
 import { classNames } from '@/utils/classNames.js';
-import '@/styles/popover.css';
 import '@/styles/textLink.css';
 import './ExternalLink.css';
 
 const isHttpUrl = (value) => /^https?:\/\/\S+$/i.test(value ?? '');
 
-// Link to another site. A plain left click does not leave the app: it shows the real URL
-// with "新しいタブで開く" and "リンクをコピー". Ctrl / Cmd / Shift / middle click and the
-// right-click menu keep working because the element is still a real <a href>.
+const HOVER_DELAY_MS = 250;
+const SCROLL_PX_PER_SECOND = 100; // how fast a long URL slides
+const SCROLL_START_DELAY_MS = 100; // wait before the first slide
+const SCROLL_HOLD_MS = 500; // pause at each end
+const FADE_PX = 16; // width of the soft edge on both sides while sliding
+
+// Link to another site.
+//   Left click        opens the site in a new tab (normal link behavior).
+//   Hover / focus     a hint shows the real URL. A URL too long for the hint slides sideways
+//                     with soft faded edges.
+//   Right click       the browser menu is replaced by ours (see useLinkMenu).
+// Ctrl / Cmd / Shift / middle click keep working because the element is still a real <a href>.
 // href: http(s) URL. Anything else is shown as plain text (never as a link).
 // children: link text (defaults to the URL).
 function ExternalLink({ href, children, className }) {
-    const wrapperRef = useRef(null);
+    const tipId = useId();
     const linkRef = useRef(null);
-    const [open, setOpen] = useState(false);
-    const [copyState, setCopyState] = useState('idle'); // idle | done | failed
-    const { mounted, state } = usePresence(open);
+    const viewRef = useRef(null);
+    const textRef = useRef(null);
+    const hoverTimerRef = useRef(null);
 
-    useClickOutside(wrapperRef, () => setOpen(false), open);
+    const [tipOpen, setTipOpen] = useState(false);
+    const tip = usePresence(tipOpen, 140);
 
-    // Ref callback: when the panel mounts, focus its first action.
-    // Stable identity, so it does not steal focus again on later re-renders.
-    const focusFirst = useCallback((node) => node?.querySelector('button')?.focus(), []);
+    function hideTip() {
+        clearTimeout(hoverTimerRef.current);
+        setTipOpen(false);
+    }
+
+    const { onContextMenu, menu } = useLinkMenu({ url: href, linkRef, onOpen: hideTip });
+
+    // Never leave a timer running after unmount.
+    useEffect(() => () => clearTimeout(hoverTimerRef.current), []);
+
+    // Hint: if the URL is wider than the hint, slide it back and forth.
+    // Written straight to the DOM (no state) so it never causes another render.
+    useLayoutEffect(() => {
+        const view = viewRef.current;
+        const text = textRef.current;
+        if (!view || !text) return undefined;
+        const overflow = Math.ceil(text.offsetWidth - view.clientWidth);
+        if (overflow <= 1) {
+            delete view.dataset.scroll;
+            return undefined;
+        }
+        view.dataset.scroll = 'true'; // adds the faded edges and the side padding
+        const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        if (reduced || !text.animate) return undefined;
+
+        const shift = overflow + FADE_PX * 2; // the side padding is added once the edges fade
+        const travel = (shift / SCROLL_PX_PER_SECOND) * 1000;
+        const total = travel * 2 + SCROLL_HOLD_MS * 2;
+        // start -> end -> pause -> back -> pause, then it loops.
+        const animation = text.animate(
+            [
+                { transform: 'translateX(0)', offset: 0 },
+                { transform: `translateX(-${shift}px)`, offset: travel / total },
+                { transform: `translateX(-${shift}px)`, offset: (travel + SCROLL_HOLD_MS) / total },
+                { transform: 'translateX(0)', offset: (travel * 2 + SCROLL_HOLD_MS) / total },
+                { transform: 'translateX(0)', offset: 1 },
+            ],
+            { duration: total, iterations: Infinity, delay: SCROLL_START_DELAY_MS },
+        );
+        return () => animation.cancel();
+    }, [tip.mounted, href]);
 
     if (!isHttpUrl(href)) return <span>{children ?? href}</span>;
 
-    function close(returnFocus) {
-        setOpen(false);
-        if (returnFocus) linkRef.current?.focus();
-    }
-
-    function handleLinkClick(event) {
-        // Let the browser handle modified clicks (new tab, new window, download).
-        if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0)
-            return;
-        event.preventDefault();
-        setCopyState('idle');
-        setOpen((current) => !current);
-    }
-
-    function openInNewTab() {
-        window.open(href, '_blank', 'noopener,noreferrer');
-        close(true);
-    }
-
-    async function copyLink() {
-        try {
-            await navigator.clipboard.writeText(href);
-            setCopyState('done');
-        } catch {
-            setCopyState('failed');
-        }
+    function showTip(wait) {
+        clearTimeout(hoverTimerRef.current);
+        hoverTimerRef.current = setTimeout(() => setTipOpen(true), wait);
     }
 
     return (
-        <span
-            ref={wrapperRef}
-            className="external-link"
-            onKeyDown={(event) => {
-                if (event.key === 'Escape' && open) {
-                    event.stopPropagation();
-                    close(true);
-                }
-            }}
-            onBlur={(event) => {
-                if (open && !wrapperRef.current.contains(event.relatedTarget)) setOpen(false);
-            }}
-        >
+        <span className="external-link">
             <a
                 ref={linkRef}
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={classNames('text-link', className)}
-                aria-haspopup="dialog"
-                aria-expanded={open}
-                onClick={handleLinkClick}
+                aria-describedby={tip.mounted ? tipId : undefined}
+                onMouseEnter={() => showTip(HOVER_DELAY_MS)}
+                onMouseLeave={hideTip}
+                onFocus={() => showTip(0)}
+                onBlur={hideTip}
+                onClick={hideTip}
+                onContextMenu={onContextMenu}
+                onKeyDown={(event) => {
+                    if (event.key === 'Escape' && tipOpen) {
+                        event.stopPropagation();
+                        hideTip();
+                    }
+                }}
             >
                 {children ?? href}
             </a>
-            {mounted && (
-                <div
-                    ref={focusFirst}
-                    role="dialog"
-                    aria-label="リンクの操作"
-                    data-state={state}
-                    className="popover external-link__panel"
+
+            {tip.mounted && (
+                <span
+                    id={tipId}
+                    role="tooltip"
+                    data-state={tip.state}
+                    className="external-link__tip"
                 >
-                    <p className="popover__item external-link__url" style={{ '--i': 0 }}>
-                        {href}
-                    </p>
-                    <button
-                        type="button"
-                        className="popover__item external-link__action"
-                        style={{ '--i': 1 }}
-                        onClick={openInNewTab}
-                    >
-                        <OpenIcon size={16} aria-hidden="true" />
-                        <span>新しいタブで開く</span>
-                    </button>
-                    <button
-                        type="button"
-                        className="popover__item external-link__action"
-                        style={{ '--i': 2 }}
-                        onClick={copyLink}
-                    >
-                        {copyState === 'done' ? (
-                            <Check size={16} aria-hidden="true" />
-                        ) : (
-                            <Copy size={16} aria-hidden="true" />
-                        )}
-                        <span>
-                            {copyState === 'done' && 'コピーしました'}
-                            {copyState === 'failed' && 'コピーできませんでした'}
-                            {copyState === 'idle' && 'リンクをコピー'}
+                    <span ref={viewRef} className="external-link__tip-view">
+                        <span ref={textRef} className="external-link__tip-text">
+                            {href}
                         </span>
-                    </button>
-                    <span className="external-link__live" role="status" aria-live="polite">
-                        {copyState === 'done' && 'リンクをコピーしました'}
                     </span>
-                </div>
+                </span>
             )}
+
+            {menu}
         </span>
     );
 }

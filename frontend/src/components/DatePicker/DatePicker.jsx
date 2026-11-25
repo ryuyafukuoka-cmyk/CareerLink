@@ -18,6 +18,8 @@ function normalizeDateText(text) {
 }
 
 // Date input: type YYYY/MM/DD or pick from the calendar popup.
+// The popup stays open after a date is picked (so it can be changed). It closes with 完了,
+// Esc, a click outside, or when focus moves to another control.
 // value: 'YYYY/MM/DD' or ''. onChange(valueString): a string, NOT an event (unlike TextInput).
 // min / max: 'YYYY/MM/DD' limits for the calendar. Inside a FormField it is wired up for you.
 function DatePicker({
@@ -61,6 +63,17 @@ function DatePicker({
         <div
             ref={wrapperRef}
             className={classNames('date-picker', className)}
+            onBlur={(event) => {
+                // Focus moved to another control (for example Tab). A null target is a click on
+                // a non-focusable spot; useClickOutside covers that.
+                if (
+                    open &&
+                    event.relatedTarget &&
+                    !wrapperRef.current.contains(event.relatedTarget)
+                ) {
+                    setOpen(false);
+                }
+            }}
             onKeyDown={(event) => {
                 if (event.key === 'Escape' && open) {
                     // Close the popup only; do not close a surrounding dialog.
@@ -130,18 +143,9 @@ function DatePicker({
                         max={max}
                         autoFocus={focusCalendar}
                         showToday
-                        onClear={
-                            value
-                                ? () => {
-                                      onChange('');
-                                      closeCalendar();
-                                  }
-                                : undefined
-                        }
-                        onSelect={(dateString) => {
-                            onChange(dateString);
-                            closeCalendar();
-                        }}
+                        onClear={value ? () => onChange('') : undefined}
+                        onDone={closeCalendar}
+                        onSelect={onChange}
                     />
                 </div>
             )}

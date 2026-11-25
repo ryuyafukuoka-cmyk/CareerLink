@@ -393,6 +393,9 @@ function GalleryPage() {
             <Section title="Link（ExternalLink / TextLink）">
                 <div className="gallery__row">
                     <ExternalLink href="https://example.com/company/recruit?year=2027" />
+                    <ExternalLink href="https://example.co.jp/recruit/graduate/2027/engineer/interview-guide/questions-and-answers?source=careerlink&campaign=spring">
+                        長いURL（ホバーで流れる）
+                    </ExternalLink>
                     <ExternalLink href="https://example.co.jp">
                         株式会社サンプルの公式サイト
                     </ExternalLink>
@@ -497,8 +500,8 @@ function GalleryPage() {
 
             <Section title="InputGroup">
                 <FormField label="公式サイトURL">
-                    <InputGroup start="https://" end=".co.jp">
-                        <TextInput placeholder="example" />
+                    <InputGroup>
+                        <TextInput placeholder="https://example.com" />
                     </InputGroup>
                 </FormField>
             </Section>
