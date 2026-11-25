@@ -19,16 +19,31 @@ const GROW_MS = 280;
 const SLIDE_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)';
 const GROW_EASING = 'cubic-bezier(0.34, 1.56, 0.64, 1)'; // a little overshoot: it "pops"
 
-// Position and size of a day button inside .calendar__body.
-function getCellBox(button, body) {
+// Where an element is on screen, relative to .calendar__body.
+function getBox(element, body) {
     const bodyRect = body.getBoundingClientRect();
-    const rect = button.getBoundingClientRect();
+    const rect = element.getBoundingClientRect();
     return {
         x: rect.left - bodyRect.left,
         y: rect.top - bodyRect.top,
         w: rect.width,
         h: rect.height,
     };
+}
+
+// Vertical offset of the week row. Inside the popup a row can still be playing its
+// "rise in" animation (translateY), which would shift every measured box.
+function getRowShift(button) {
+    const row = button.closest('tr');
+    const transform = row ? getComputedStyle(row).transform : 'none';
+    if (!transform || transform === 'none' || typeof DOMMatrixReadOnly === 'undefined') return 0;
+    return new DOMMatrixReadOnly(transform).m42;
+}
+
+// Resting position and size of a day button inside .calendar__body.
+function getCellBox(button, body) {
+    const box = getBox(button, body);
+    return { ...box, y: box.y - getRowShift(button) };
 }
 
 // One animation frame of the marker: sits on `box`, scaled (0 = a point at the cell's center).
@@ -44,7 +59,9 @@ const toFrame = (box, scale = 1) => ({
 // autoFocus: move focus into the grid on mount (used when a popup opens from the keyboard).
 // Picking a date moves the highlight to it: it slides from the previous date when that is shown
 // in this month, otherwise (nothing picked before, or the old date is in another month) it pops
-// up out of the new date.
+// up out of the new date. Picking again while it is still moving slides on from where it is.
+// When the value changes to a date that is not on screen (typed, 今日), the calendar jumps to
+// that month.
 // onDone: adds a 完了 button to the footer (DatePicker uses it to close the popup).
 // Keys: arrows = day / week, PageUp / PageDown = month (Shift = year), Home / End = week start / end.
 function Calendar({
@@ -63,12 +80,27 @@ function Calendar({
     const bodyRef = useRef(null);
     const markerRef = useRef(null);
     const lastKeyRef = useRef(null); // picked date of the previous run ('' = none); null before the first run
+    const lastMonthRef = useRef(null); // visible month of the previous run
+    const inFlightRef = useRef(null); // where the highlight was when its move was interrupted
     const [today] = useState(startOfToday);
     const minDate = min ? parseDate(min) : null;
     const maxDate = max ? parseDate(max) : null;
     const selected = parseDate(value);
+    const selectedKey = selected ? formatDate(selected) : '';
     // The one date that holds the roving tab stop. The visible month follows it.
     const [focused, setFocused] = useState(() => selected ?? today);
+    const year = focused.getFullYear();
+    const month = focused.getMonth();
+
+    // The value changed to a date that is not in the grid: show its month. (Adjusting state while
+    // rendering, so the new month is on screen in the same commit.)
+    const [syncedKey, setSyncedKey] = useState(selectedKey);
+    if (selectedKey !== syncedKey) {
+        setSyncedKey(selectedKey);
+        if (selected && !getMonthGrid(year, month).some((day) => isSameDay(day, selected))) {
+            setFocused(selected);
+        }
+    }
 
     // Focus the day button after keyboard navigation, and on mount if asked.
     useEffect(() => {
@@ -80,7 +112,7 @@ function Calendar({
         if (autoFocus) gridRef.current?.querySelector('button[tabindex="0"]')?.focus();
     }, [autoFocus]);
 
-    const selectedKey = selected ? formatDate(selected) : '';
+    const monthKey = `${year}-${month}`;
 
     // Move the highlight when the picked date changes. At rest the day button paints its own
     // highlight; during the move the button's highlight is hidden and the marker carries it.
@@ -90,7 +122,11 @@ function Calendar({
         const body = bodyRef.current;
         const marker = markerRef.current;
         const previousKey = lastKeyRef.current;
+        const sameMonth = lastMonthRef.current === monthKey;
+        const interrupted = inFlightRef.current;
         lastKeyRef.current = selectedKey;
+        lastMonthRef.current = monthKey;
+        inFlightRef.current = null;
 
         const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
         if (previousKey === null || previousKey === selectedKey || reduced || !marker.animate) {
@@ -99,30 +135,58 @@ function Calendar({
         const target = body.querySelector('.calendar__day--selected');
         if (!target) return undefined;
 
-        const box = getCellBox(target, body);
-        const oldButton = previousKey
-            ? body.querySelector(
-                  `.calendar__day[data-date="${previousKey}"]:not(.calendar__day--outside)`,
-              )
-            : null;
-        const slide = oldButton !== null;
-        const from = slide ? getCellBox(oldButton, body) : box;
-
+        // Switch to "moving" before measuring anything: measuring forces a style update, and
+        // without this the old day would start fading its highlight out first.
         marker.style.display = 'block';
         body.classList.add('calendar__body--moving');
+
+        const box = getCellBox(target, body);
+        // Slide from where the highlight is now (an interrupted move) or from the old date's
+        // button. It only slides between days of the shown month: a different month (including
+        // a day of the next/previous month that is visible in the first/last week) pops up.
+        const targetInMonth = !target.classList.contains('calendar__day--outside');
+        let from = null;
+        if (!targetInMonth) {
+            from = null;
+        } else if (sameMonth && interrupted) {
+            from = interrupted;
+        } else if (sameMonth && previousKey) {
+            const oldButton = body.querySelector(
+                `.calendar__day[data-date="${previousKey}"]:not(.calendar__day--outside)`,
+            );
+            if (oldButton) {
+                from = getCellBox(oldButton, body);
+                oldButton.classList.add('calendar__day--leaving');
+            }
+        }
+        const slide = from !== null;
+
         Object.assign(marker.style, { left: '0px', top: '0px', ...toFrame(box) });
-        const animation = marker.animate([toFrame(from, slide ? 1 : 0), toFrame(box)], {
+        const animation = marker.animate([toFrame(from ?? box, slide ? 1 : 0), toFrame(box)], {
             duration: slide ? SLIDE_MS : GROW_MS,
             easing: slide ? SLIDE_EASING : GROW_EASING,
         });
-        const finish = () => {
+        // Put everything back to "at rest": the day buttons paint the highlight again.
+        const rest = () => {
             marker.style.display = 'none';
             body.classList.remove('calendar__body--moving');
+            body.querySelectorAll('.calendar__day--leaving').forEach((button) => {
+                button.classList.remove('calendar__day--leaving');
+            });
         };
-        animation.onfinish = finish;
-        animation.oncancel = finish;
-        return () => animation.cancel();
-    }, [selectedKey]);
+        animation.onfinish = rest;
+        return () => {
+            // Cut short by another pick: remember where the highlight is, so the next move
+            // continues from there instead of jumping back to the previous date.
+            if (animation.playState !== 'finished') inFlightRef.current = getBox(marker, body);
+            // cancel() fires a "cancel" event a frame later, even for a finished animation. That
+            // late event must not reach the next move (it would hide the new highlight and make
+            // it teleport), so it is not listened to; the reset is done here, synchronously.
+            animation.onfinish = null;
+            animation.cancel();
+            rest();
+        };
+    }, [selectedKey, monthKey]);
 
     function clamp(date) {
         if (minDate && isOutOfRange(date, minDate, null)) return minDate;
@@ -153,11 +217,12 @@ function Calendar({
         }
     }
 
-    const year = focused.getFullYear();
-    const month = focused.getMonth();
     const days = getMonthGrid(year, month);
     const weeks = Array.from({ length: 6 }, (_, row) => days.slice(row * 7, row * 7 + 7));
     const todayDisabled = isOutOfRange(today, minDate, maxDate);
+    // No month button toward a month that has no selectable day (min / max).
+    const prevDisabled = Boolean(minDate && new Date(year, month, 0) < minDate);
+    const nextDisabled = Boolean(maxDate && new Date(year, month + 1, 1) > maxDate);
 
     return (
         <div className="calendar">
@@ -166,6 +231,7 @@ function Calendar({
                     type="button"
                     className="calendar__nav"
                     aria-label="前の月"
+                    disabled={prevDisabled}
                     onClick={() => setFocused(clamp(addMonths(focused, -1)))}
                 >
                     <ChevronLeft size={18} aria-hidden="true" />
@@ -177,6 +243,7 @@ function Calendar({
                     type="button"
                     className="calendar__nav"
                     aria-label="次の月"
+                    disabled={nextDisabled}
                     onClick={() => setFocused(clamp(addMonths(focused, 1)))}
                 >
                     <ChevronRight size={18} aria-hidden="true" />

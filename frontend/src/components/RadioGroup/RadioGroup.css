@@ -90,6 +90,20 @@
     flex-direction: column;
 }
 
+/* Hover (default variant): an underline is drawn under the label from left to right. */
+.radio-group__label {
+    align-self: flex-start;
+    padding-bottom: 1px;
+    background: linear-gradient(var(--color-primary), var(--color-primary)) 0 100% / 0 2px no-repeat;
+    transition: background-size 280ms var(--ease-out);
+}
+
+.radio-group--default
+    .radio-group__option:hover:not(.radio-group__option--disabled)
+    .radio-group__label {
+    background-size: 100% 2px;
+}
+
 .radio-group__description {
     color: var(--color-text-muted);
     font-size: var(--font-size-sm);
@@ -110,6 +124,22 @@
     border-color: var(--color-border-strong);
 }
 
+/* Hover (card variant): a primary-colored border is drawn around the card, left to right. */
+.radio-group--card .radio-group__option::after {
+    position: absolute;
+    inset: calc(var(--border-width) * -1);
+    border: 2px solid var(--color-primary);
+    border-radius: var(--radius-md);
+    clip-path: inset(0 100% 0 0);
+    content: '';
+    pointer-events: none;
+    transition: clip-path 380ms var(--ease-out);
+}
+
+.radio-group--card .radio-group__option:hover:not(.radio-group__option--disabled)::after {
+    clip-path: inset(0 0 0 0);
+}
+
 .radio-group--card .radio-group__option:has(:checked) {
     background: var(--color-primary-soft);
     border-color: var(--color-primary);
@@ -127,7 +157,9 @@
 @media (prefers-reduced-motion: reduce) {
     .radio-group__mark,
     .radio-group__mark::after,
-    .radio-group--card .radio-group__option {
+    .radio-group__label,
+    .radio-group--card .radio-group__option,
+    .radio-group--card .radio-group__option::after {
         transition: none;
     }
 

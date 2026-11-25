@@ -18,8 +18,9 @@ function normalizeDateText(text) {
 }
 
 // Date input: type YYYY/MM/DD or pick from the calendar popup.
-// The popup stays open after a date is picked (so it can be changed). It closes with 完了,
-// Esc, a click outside, or when focus moves to another control.
+// The popup never closes by itself: not when a date is picked, not while typing (the calendar
+// follows the typed date). It closes only with 完了, Esc, a click outside, or when focus moves
+// to another control.
 // value: 'YYYY/MM/DD' or ''. onChange(valueString): a string, NOT an event (unlike TextInput).
 // min / max: 'YYYY/MM/DD' limits for the calendar. Inside a FormField it is wired up for you.
 function DatePicker({
@@ -100,10 +101,7 @@ function DatePicker({
                 value={value ?? ''}
                 placeholder={placeholder}
                 disabled={disabled}
-                onChange={(event) => {
-                    onChange(event.target.value);
-                    setOpen(false);
-                }}
+                onChange={(event) => onChange(event.target.value)}
                 onBlur={handleBlur}
                 onCompositionStart={() => {
                     composingRef.current = true;

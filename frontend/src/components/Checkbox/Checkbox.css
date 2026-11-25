@@ -34,6 +34,17 @@
     border-color: var(--color-text-muted);
 }
 
+/* Hover: an underline is drawn under the label from left to right. */
+.checkbox__label {
+    padding-bottom: 1px;
+    background: linear-gradient(var(--color-primary), var(--color-primary)) 0 100% / 0 2px no-repeat;
+    transition: background-size 280ms var(--ease-out);
+}
+
+.checkbox:hover:not(.checkbox--disabled) .checkbox__label {
+    background-size: 100% 2px;
+}
+
 /* Press: squash. Release: it springs back past its size and settles. */
 .checkbox:active .checkbox__mark {
     transform: scale(0.82);
@@ -88,6 +99,7 @@
 
 @media (prefers-reduced-motion: reduce) {
     .checkbox__mark,
+    .checkbox__label,
     .checkbox__tick {
         transition: none;
     }

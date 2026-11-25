@@ -26,7 +26,12 @@
     transition: background-color var(--transition-fast);
 }
 
-.calendar__nav:hover {
+.calendar__nav:disabled {
+    color: var(--color-disabled-text);
+    cursor: not-allowed;
+}
+
+.calendar__nav:hover:not(:disabled) {
     color: var(--color-text);
     background: var(--color-surface-alt);
 }
@@ -51,6 +56,7 @@
     pointer-events: none;
     background: var(--color-primary);
     border-radius: var(--radius-sm);
+    will-change: transform, width, height;
 }
 
 .calendar__grid {
@@ -107,6 +113,24 @@
     transition: none; /* no fade when the highlight hands over to the button */
     background: var(--color-primary);
     opacity: 1;
+}
+
+/* While the highlight moves, no day fades its background in or out: the marker is the only
+   highlight on screen. */
+.calendar__body--moving .calendar__day {
+    transition: none;
+}
+
+/* The day the highlight is leaving keeps its white number for a moment, then goes back. */
+.calendar__day--leaving {
+    animation: calendar-day-leave 200ms var(--ease-out) backwards;
+}
+
+@keyframes calendar-day-leave {
+    0%,
+    40% {
+        color: var(--color-text-inverse);
+    }
 }
 
 /* While the highlight moves, the new day shows no highlight of its own and its number

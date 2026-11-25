@@ -199,7 +199,7 @@ function GalleryPage() {
                     label="実施日"
                     hint="全角や「-」「.」区切りでも、フォーカスを外すと整います"
                 >
-                    <DatePicker value={date} onChange={setDate} max="2026/12/31" />
+                    <DatePicker value={date} onChange={setDate} />
                 </FormField>
                 <p>値: {date || '（なし）'}</p>
                 <div className="gallery__calendar">
