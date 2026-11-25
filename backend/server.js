@@ -1,5 +1,5 @@
-// Local development entry point (npm run dev:back). Uses the dev-only header login.
-// The Lambda entry point is lambda.js; this file is never deployed.
+// npm run dev:back で使うローカル開発用の入口。開発用ヘッダーでログインする。
+// デプロイ先の Lambda では lambda.js を使う。
 const { createApp } = require('./app');
 const { devAuthenticate } = require('./authorization/devAuthenticate');
 

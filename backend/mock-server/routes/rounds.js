@@ -1,4 +1,4 @@
-// RD-01 to RD-06: application rounds (create / list / detail / update / records of a round / history).
+// 応募回API（RD-01〜RD-06）。作成、一覧、詳細、更新、応募回に属する活動記録、変更履歴を扱う。
 const express = require('express');
 const { ok, fail } = require('../helpers');
 const { isRealDate } = require('../validators');
@@ -15,20 +15,20 @@ function roundsRoutes(store) {
     const findOr404 = (id) =>
         store.rounds.find((r) => r.applicationRoundId === id) ?? fail(404, 'NOT_FOUND');
 
-    // View: the owner student, instructors and admins. Other students get 403.
+    // 応募回を閲覧できるのは学生本人・指導員・管理者。他の学生には403を返す。
     const assertCanView = (actor, round) => {
         if (actor.role === 'student' && round.studentUserId !== actor.userId)
             fail(403, 'FORBIDDEN');
     };
 
-    // Change: the owner student and admins. Instructors and other students get 403.
+    // 応募回を変更できるのは学生本人と管理者。指導員と他の学生には403を返す。
     const assertCanChange = (actor, round) => {
         if (actor.role === 'admin') return;
         if (actor.role === 'student' && round.studentUserId === actor.userId) return;
         fail(403, 'FORBIDDEN');
     };
 
-    // RD-01 POST /api/application-rounds  body: { studentUserId, companyId, applicationDate? }
+    // RD-01 POST /api/application-rounds。本文は { studentUserId, companyId, applicationDate? }。
     router.post('/application-rounds', (req, res) => {
         const actor = req.actor;
         const body = req.body ?? {};
@@ -46,14 +46,14 @@ function roundsRoutes(store) {
         }
         if (details.length > 0) validationError(details);
 
-        // Students: only for themselves. Instructors: never. Admin: any existing student.
+        // 学生は自分の応募回のみ作成できる。指導員は作成不可。管理者は既存の学生を指定して代理登録できる。
         if (actor.role === 'instructor') fail(403, 'FORBIDDEN');
         if (actor.role === 'student' && body.studentUserId !== actor.userId) fail(403, 'FORBIDDEN');
         const student = store.getUser(body.studentUserId);
         if (!student || student.role !== 'student') fail(404, 'NOT_FOUND');
         const company = store.getCompany(body.companyId) ?? fail(404, 'NOT_FOUND');
 
-        // 30-second limit per operator, separate from R-01. Admin proxy creation counts for the admin.
+        // 操作者単位で30秒の作成間隔を設ける。活動記録（R-01）とは別に数え、代理登録は管理者自身の操作として数える。
         store.assertCooldown(actor.userId, 'round');
 
         const round = {
@@ -103,7 +103,7 @@ function roundsRoutes(store) {
         ok(res, round);
     });
 
-    // RD-04 PATCH /api/application-rounds/:id  body: { stage?, statusNote?, applicationDate? } (1 or more)
+    // RD-04 PATCH /api/application-rounds/:id。本文に stage、statusNote、applicationDate のうち1項目以上を指定する。
     router.patch('/application-rounds/:id', (req, res) => {
         const actor = req.actor;
         const round = findOr404(req.params.id);
@@ -134,11 +134,11 @@ function roundsRoutes(store) {
         const nextStage = has('stage') ? body.stage : round.stage;
         const nextDate = has('applicationDate') ? body.applicationDate : round.applicationDate;
 
-        // The date may be empty only while the stage is "considering". Nothing is filled in automatically.
+        // 応募日を空欄にできるのは considering の間だけ。日付は自動補完しない。
         if (nextStage !== 'considering' && !nextDate) {
             validationError([{ field: 'applicationDate', messageId: 'E-215' }]);
         }
-        // Leaving "considering" requires a category on every interview question of this round.
+        // considering から別の選考段階に進めるには、この応募回の面接質問すべてにカテゴリが必要。
         if (nextStage !== 'considering') {
             const missing = store.records.some(
                 (r) =>
@@ -162,7 +162,7 @@ function roundsRoutes(store) {
         ok(res, round);
     });
 
-    // RD-05 GET /api/application-rounds/:id/records  (drafts only for the owner and admins)
+    // RD-05 GET /api/application-rounds/:id/records。下書きは所有者と管理者だけに返す。
     router.get('/application-rounds/:id/records', (req, res) => {
         const actor = req.actor;
         const round = findOr404(req.params.id);
@@ -192,7 +192,7 @@ function roundsRoutes(store) {
         ok(res, items);
     });
 
-    // RD-06 GET /api/application-rounds/:id/history  (editor and time only, newest first)
+    // RD-06 GET /api/application-rounds/:id/history。編集者と日時だけを、新しい順に返す。
     router.get('/application-rounds/:id/history', (req, res) => {
         const round = findOr404(req.params.id);
         assertCanView(req.actor, round);

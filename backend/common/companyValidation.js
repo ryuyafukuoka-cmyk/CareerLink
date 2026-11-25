@@ -1,11 +1,11 @@
-// Input rules for the company APIs (F-006). Error details use { field, messageId } (API設計 §1).
+// 企業API（F-006）の入力規則。項目ごとのエラーは { field, messageId } で返す（API設計 §1）。
 const { validationError } = require('./errors');
 
 const PAGE_SIZE = 10;
-const MIN_REGION_ID = 1; // 1-47 prefectures
-const MAX_REGION_ID = 55; // 48-55 hiring areas (independent values, never expanded)
+const MIN_REGION_ID = 1; // 1〜47は都道府県。
+const MAX_REGION_ID = 55; // 48〜55は採用エリア。都道府県に展開せず、独立した値として扱う。
 
-// Full-width katakana, long vowel mark, middle dot, half/full-width spaces only (F-006-01).
+// 全角カタカナ、長音符、中点、半角・全角スペースのみ許可する（F-006-01）。
 const KATAKANA_PATTERN = /^[ァ-ヶー・ \u3000]+$/u;
 
 function isHttpUrl(value) {
@@ -17,7 +17,7 @@ function isHttpUrl(value) {
     }
 }
 
-// Region ids arrive as strings ("13") or numbers. Returns the number, or null if not 1-55.
+// 地域IDは数値または数値文字列（例："13"）で受け取る。1〜55の整数に変換できなければ null を返す。
 function toRegionId(value) {
     const text = String(value);
     if (!/^\d{1,2}$/.test(text)) return null;
@@ -25,9 +25,8 @@ function toRegionId(value) {
     return id >= MIN_REGION_ID && id <= MAX_REGION_ID ? id : null;
 }
 
-// Validates a CompanyInput body (C-02 / C-04). Returns the normalized value:
-// { nameOfficial, nameKatakana, regionIds: number[] (sorted), websiteUrl: string | null }.
-// Throws VALIDATION_ERROR with every field error at once.
+// C-02・C-04 の CompanyInput を検証し、正式名、カナ名、ソート済みの地域ID配列、URL（未設定は null）を返す。
+// 不正な項目が複数あれば、すべて VALIDATION_ERROR に含める。
 function parseCompanyInput(body) {
     const input = body !== null && typeof body === 'object' ? body : {};
     const details = [];
@@ -54,7 +53,7 @@ function parseCompanyInput(body) {
         }
     }
 
-    // "No website" checked -> the URL must be empty; unchecked -> a valid http(s) URL is required.
+    // 「企業サイトなし」を選んだ場合はURLを空にする。それ以外は有効な http または https のURLが必須。
     let websiteUrl = null;
     const rawUrl = typeof input.websiteUrl === 'string' ? input.websiteUrl.trim() : '';
     if (input.noWebsite === true) {
@@ -72,7 +71,7 @@ function parseCompanyInput(body) {
     return { nameOfficial, nameKatakana, regionIds, websiteUrl };
 }
 
-// C-01 query: keyword?, prefectures? (comma separated region ids), page? (1 or more, default 1).
+// C-01 の任意の検索条件。keyword、prefectures（地域IDのカンマ区切り）、page（1以上、既定値1）。
 function parseCompanySearchQuery(query = {}) {
     const details = [];
     const single = (value) => (value === undefined || typeof value === 'string' ? value : null);

@@ -1,8 +1,7 @@
-// RDS access for companies and company_locations (DB設計). SQL lives here only.
-// Every function takes an optional `executor` (a transaction connection) as its last argument.
+// companies と company_locations の SQL をまとめる（DB設計）。末尾の任意引数 executor にトランザクション接続を渡せる。
 const { query } = require('../db/pool');
 
-// Escapes LIKE wildcards so user input is matched literally (MariaDB default escape is "\").
+// 入力を文字どおりに検索するため、LIKE のワイルドカードをエスケープする。MariaDB の既定のエスケープ文字はバックスラッシュ。
 function escapeLike(value) {
     return value.replace(/[\\%_]/g, '\\$&');
 }
@@ -11,7 +10,7 @@ const COMPANY_COLUMNS = `
     c.company_id AS id, c.company_name AS nameOfficial,
     c.company_name_kana AS nameKatakana, c.website_url AS websiteUrl`;
 
-// Adds `prefectures: string[]` (region ids, ascending) to company rows -> API `Company[]`.
+// 企業の各行に地域IDの文字列配列 prefectures（昇順）を加え、API用の Company 配列に変換する。
 async function withRegions(rows, executor) {
     if (rows.length === 0) return [];
     const locations = await query(
@@ -36,8 +35,8 @@ async function withRegions(rows, executor) {
     }));
 }
 
-// C-01. Keyword (name or katakana) AND regions (OR, matched directly against stored region ids).
-// Newest update first. Returns { items: Company[], totalCount }.
+// C-01。企業名またはカナ名の条件と地域条件を AND で組み合わせ、地域は保存済みIDとの OR 一致で判定する。
+// 更新日時の新しい順に取得し、{ items: Company[], totalCount } を返す。
 async function search({ keyword, regionIds, limit, offset }, executor) {
     const where = [];
     const params = [];
@@ -71,7 +70,7 @@ async function search({ keyword, regionIds, limit, offset }, executor) {
     return { items: await withRegions(rows, executor), totalCount: Number(countRows[0].n) };
 }
 
-// C-07. Selection list: [{ companyId, nameOfficial }] ordered by katakana.
+// C-07。企業の選択候補をカナ順に並べ、[{ companyId, nameOfficial }] で返す。
 async function listOptions(keyword, executor) {
     const params = [];
     let clause = '';
@@ -90,8 +89,8 @@ async function listOptions(keyword, executor) {
     return rows.map((r) => ({ companyId: String(r.id), nameOfficial: r.nameOfficial }));
 }
 
-// Returns Company | null. forUpdate (inside a transaction) locks the company row, which is how
-// every change and the delete are serialized (DB設計 companies).
+// 企業があれば Company、なければ null を返す。トランザクション内で forUpdate を指定すると企業行をロックし、
+// 同じ企業に対する変更と削除を順番に処理できる（DB設計 companies）。
 async function findById(id, executor, { forUpdate = false } = {}) {
     const rows = await query(
         `SELECT ${COMPANY_COLUMNS}, CAST(c.deletion_version AS CHAR) AS deletionVersion
@@ -104,7 +103,7 @@ async function findById(id, executor, { forUpdate = false } = {}) {
     return { ...company, deletionVersion: rows[0].deletionVersion };
 }
 
-// Locks the company row (first lock of every change under a company). Returns false if missing.
+// 企業配下のデータを変更する際は最初に企業行をロックする。企業が存在しなければ false を返す。
 async function lockById(conn, id) {
     const rows = await query(
         'SELECT company_id FROM companies WHERE company_id = ? FOR UPDATE',
@@ -114,8 +113,8 @@ async function lockById(conn, id) {
     return rows.length === 1;
 }
 
-// Marks that data under the company changed, so a pending delete confirmation becomes stale.
-// Call after lockById, in the same transaction as the change.
+// 削除確認後の変更を検知するため、企業配下のデータを変更したことを記録する。
+// lockById の後で、データ変更と同じトランザクション内で呼ぶ。
 async function bumpDeletionVersion(conn, id) {
     await query(
         'UPDATE companies SET deletion_version = deletion_version + 1 WHERE company_id = ?',
@@ -124,7 +123,7 @@ async function bumpDeletionVersion(conn, id) {
     );
 }
 
-// Creates the company and its locations. Call inside one transaction. Returns the new id.
+// 企業とその地域を1トランザクションで登録し、新しい企業IDを返す。
 async function insert(conn, { nameOfficial, nameKatakana, websiteUrl, regionIds }, userId) {
     const result = await query(
         `INSERT INTO companies (company_name, company_name_kana, website_url, created_by, updated_by)
@@ -136,8 +135,8 @@ async function insert(conn, { nameOfficial, nameKatakana, websiteUrl, regionIds 
     return result.insertId;
 }
 
-// Updates the company, replaces its locations and bumps deletion_version (so a pending delete
-// confirmation becomes stale). Call inside one transaction, after findById(..., forUpdate).
+// findById で行をロックしてから同じトランザクション内で企業情報を更新し、地域を置き換える。
+// deletion_version を進め、変更前の削除確認を無効にする。
 async function update(conn, id, { nameOfficial, nameKatakana, websiteUrl, regionIds }, userId) {
     await query(
         `UPDATE companies
@@ -159,8 +158,7 @@ async function replaceLocations(conn, companyId, regionIds) {
     );
 }
 
-// C-05. Counts and version come from ONE statement, so they are the same point in time.
-// Returns { activityRecordCount, applicationRoundCount, deletionVersion } | null.
+// C-05。活動記録数・応募回数と deletionVersion を単一のSQLで取得し、同じ時点の値を返す。企業がなければ null。
 async function findDeletionImpact(id, executor) {
     const rows = await query(
         `SELECT CAST(c.deletion_version AS CHAR) AS deletionVersion,
@@ -181,16 +179,15 @@ async function findDeletionImpact(id, executor) {
     };
 }
 
-// Reaches a company's rows through applications -> activities (explicit order, no ON DELETE
-// CASCADE: 機能詳細設計 企業削除のDB処理). Table names below are fixed constants, never input.
+// applications から activities をたどり、企業配下の行を特定する。削除順は明示する（機能詳細設計「企業削除のDB処理」）。
+// 下記のテーブル名は固定値を使い、外部入力から組み立てない。
 const VIA_ACTIVITY = `
     JOIN activities a ON a.activity_id = ad.activity_id
     JOIN applications ap ON ap.application_id = a.application_id
     WHERE ap.company_id = ?`;
 const DETAIL_TABLES = ['interviews', 'exams', 'briefings', 'other_activities'];
 
-// C-06. Physically deletes the company and everything under it, children first.
-// Call inside one transaction: any error must roll the whole thing back.
+// C-06。子から順に企業と関連データを物理削除する。1トランザクションで呼び、途中で失敗したら全体を取り消す。
 async function deleteWithRelations(conn, id) {
     await query(
         `DELETE iq FROM interview_questions iq

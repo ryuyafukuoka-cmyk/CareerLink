@@ -1,4 +1,4 @@
-// K-01 company karte, K-02 interview info, K-03 exam info. Completed records only.
+// K-01 は企業別カルテ、K-02 は面接情報、K-03 は試験情報。いずれも完了済みの活動記録だけを扱う。
 const express = require('express');
 const { ok, fail } = require('../helpers');
 
@@ -7,7 +7,7 @@ const ACTIVITY_TYPES = ['interview', 'exam', 'briefing', 'other'];
 function karteRoutes(store) {
     const router = express.Router();
 
-    // Validates companyId (404) and the filter (400), then returns the company's completed records, newest year first.
+    // 企業IDの存在（404）と絞り込み条件（400）を確認し、その企業の完了済み記録を卒業年度の新しい順に返す。
     function load(req) {
         const company = store.getCompany(req.params.companyId) ?? fail(404, 'NOT_FOUND');
         const { graduationYear, activityType } = req.query;
@@ -56,7 +56,7 @@ function karteRoutes(store) {
                 group = { graduationYear: owner.graduationYear, records: [] };
                 years.push(group);
             }
-            // Poster name: the person themself, instructors and admins only.
+            // 投稿者名を表示できるのは本人・指導員・管理者のみ。
             const canSeeName = actor.userId === owner.userId || actor.role !== 'student';
             group.records.push({
                 recordId: record.recordId,
@@ -68,7 +68,7 @@ function karteRoutes(store) {
         ok(res, { company, years });
     });
 
-    // K-02 GET /api/companies/:companyId/interview-info: questions and follow-ups, never answers.
+    // K-02 GET /api/companies/:companyId/interview-info。質問と深掘り質問を返し、回答は含めない。
     router.get('/companies/:companyId/interview-info', (req, res) => {
         const items = [];
         for (const { record, owner } of load(req).records) {

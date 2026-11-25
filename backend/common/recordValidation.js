@@ -1,4 +1,4 @@
-// Server adapter for the validation rules also used by the record form.
+// 活動記録フォームと共通の入力規則をサーバー側から利用する。
 const { validationError } = require('./errors');
 const { parseId } = require('./validation');
 

@@ -1,4 +1,4 @@
-// Earlier clients and mock logs used short names. Existing rows and bookmarked filters stay readable.
+// 旧クライアントやモックのログで使った短い種別名にも対応し、保存済みの履歴やブックマークの絞り込み条件を引き続き使えるようにする。
 const names = [
     ['createRecord', 'createActivityRecord'],
     ['updateRecord', 'updateActivityRecord'],

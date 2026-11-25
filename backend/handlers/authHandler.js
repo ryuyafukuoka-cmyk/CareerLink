@@ -1,4 +1,4 @@
-// A-01 POST /api/auth/login. Uses the verified claims only (no actor yet: the user may not exist).
+// A-01 POST /api/auth/login。初回はユーザーが未登録の場合があるため、検証済みのクレームだけを使う。
 const express = require('express');
 const { ok } = require('../common/response');
 const authService = require('../services/authService');

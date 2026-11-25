@@ -1,4 +1,4 @@
-// Builds the mock Express app. Routes are added per schedule week (rounds, records, search, admin).
+// 応募回、活動記録、検索、管理機能などのルートを開発週ごとに追加するモック用の Express アプリ。
 const express = require('express');
 const { bodyLimitBytes } = require('../common/recordInputRules.json');
 const { authenticate } = require('./auth');

@@ -4,7 +4,7 @@ const path = require('node:path');
 const mysql = require('mysql2/promise');
 const { startApi } = require('./http.cjs');
 
-// Use only explicit test settings and a fresh schema. Never accept a database name as input.
+// 明示したテスト用の接続設定で新しいスキーマを作成する。既存のDB名を入力として受け取らない。
 async function startFixture() {
     const {
         TEST_DB_HOST = '127.0.0.1',
@@ -61,7 +61,7 @@ async function startFixture() {
             AD_INSTRUCTOR_GROUP: 'instructor',
             DB_CONNECTION_LIMIT: '2',
         });
-        // The app reads DB settings when its modules are first loaded.
+        // アプリはモジュールの初回読み込み時にDB接続設定を読み取る。
         pool = require('../db/pool').getPool();
         const { createApp } = require('../app');
         const { devAuthenticate } = require('../authorization/devAuthenticate');

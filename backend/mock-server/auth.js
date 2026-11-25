@@ -1,9 +1,8 @@
-// Dev-only mock authentication. The acting user is chosen with the `X-Mock-User` header (a userId).
+// 開発用のモック認証。X-Mock-User ヘッダーのユーザーIDで操作ユーザーを決める。
 //
-// Special values for testing the login screens:
-//   X-Mock-User: new-student   -> a student with no graduation year yet (first login, SC-00-03)
-//   X-Mock-User: ineligible    -> 403 FORBIDDEN, reason NOT_ELIGIBLE
-// An inactive user (userId 4) gets 403 FORBIDDEN, reason ACCOUNT_INACTIVE on login.
+// ログイン画面のテストには X-Mock-User の特別な値を使う。
+// new-student は卒業年度が未登録の学生（初回登録画面 SC-00-03）。ineligible は403・NOT_ELIGIBLE。
+// 無効なユーザー（userId 4）でログインすると403・ACCOUNT_INACTIVE を返す。
 
 const { fail } = require('./helpers');
 

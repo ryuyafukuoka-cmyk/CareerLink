@@ -1,4 +1,4 @@
-// Throwaway mock server (deleted on 12/20). Response helpers matching the API envelope.
+// 12月20日に削除予定のモックサーバー用。レスポンスを本体APIと同じ形式に整える。
 
 const { AppError } = require('../common/errors');
 const { errorHandler: apiErrorHandler } = require('../common/response');
@@ -24,17 +24,17 @@ class HttpError extends Error {
     }
 }
 
-// Success: { data }. Defaults to 200; pass 201 for creation.
+// 成功時は { data } を返す。既定は200、新規作成時は201を指定する。
 function ok(res, data, status = 200) {
     res.status(status).json({ data });
 }
 
-// Failure: throws, and errorHandler turns it into { error: { code, message, reason?, details? } }.
+// 失敗時は例外を投げ、errorHandler が { error: { code, message, reason?, details? } } に整える。
 function fail(status, code, message, reason, details, headers) {
     throw new HttpError(status, code, message ?? DEFAULT_MESSAGES[code], reason, details, headers);
 }
 
-// Express error middleware (must keep 4 arguments).
+// Express がエラー処理として識別できるよう、引数は4つにする。
 function errorHandler(err, req, res, next) {
     if (err instanceof HttpError) {
         const error = { code: err.code, message: err.message };
@@ -56,7 +56,7 @@ function errorHandler(err, req, res, next) {
     });
 }
 
-// Throws FORBIDDEN unless the actor has one of the given roles.
+// 操作者の権限が許可リストに含まれなければ FORBIDDEN を投げる。
 function requireRole(actor, ...roles) {
     if (!roles.includes(actor.role)) fail(403, 'FORBIDDEN');
 }

@@ -1,4 +1,4 @@
-// C-01 to C-07: company list / create / detail / update / deletion impact / delete / options.
+// 企業API（C-01〜C-07）。一覧、登録、詳細、更新、削除の影響確認、削除、選択候補を扱う。
 const express = require('express');
 const { ok, fail, requireRole } = require('../helpers');
 const { validateCompanyInput, isRegionId, parsePage } = require('../validators');
@@ -30,7 +30,7 @@ function companiesRoutes(store) {
             validationError([{ field: 'prefectures', messageId: 'E-202' }]);
         }
 
-        // Keyword AND regions. Regions are OR and matched directly against the stored region IDs.
+        // キーワードと地域の両方を満たす企業を抽出する。地域は保存済みの地域IDのいずれかとの一致で判定する。
         const matched = store.companies.filter((c) => {
             const byKeyword =
                 !keyword ||
@@ -41,7 +41,7 @@ function companiesRoutes(store) {
             return byKeyword && byRegion;
         });
 
-        // Newest first (update time).
+        // 更新日時の新しい順。
         matched.sort(
             (a, b) =>
                 store.getCompanyMeta(b.companyId).updatedAt -
@@ -74,7 +74,7 @@ function companiesRoutes(store) {
         ok(res, options);
     });
 
-    // C-02 POST /api/companies  body: CompanyInput
+    // C-02 POST /api/companies。本文は CompanyInput。
     router.post('/companies', (req, res) => {
         const { details, value } = validateCompanyInput(req.body);
         if (details.length > 0) validationError(details);
@@ -95,7 +95,7 @@ function companiesRoutes(store) {
         ok(res, findOr404(req.params.companyId));
     });
 
-    // C-04 PUT /api/companies/:companyId  body: CompanyInput
+    // C-04 PUT /api/companies/:companyId。本文は CompanyInput。
     router.put('/companies/:companyId', (req, res) => {
         const company = findOr404(req.params.companyId);
         const { details, value } = validateCompanyInput(req.body);
@@ -112,7 +112,7 @@ function companiesRoutes(store) {
         ok(res, company);
     });
 
-    // C-05 GET /api/companies/:companyId/deletion-impact  (admin only)
+    // C-05 GET /api/companies/:companyId/deletion-impact（管理者のみ）。
     router.get('/companies/:companyId/deletion-impact', (req, res) => {
         requireRole(req.actor, 'admin');
         const company = findOr404(req.params.companyId);
@@ -125,7 +125,7 @@ function companiesRoutes(store) {
         });
     });
 
-    // C-06 DELETE /api/companies/:companyId  body: { confirmName, expectedDeletionVersion }
+    // C-06 DELETE /api/companies/:companyId。本文は { confirmName, expectedDeletionVersion }。
     router.delete('/companies/:companyId', (req, res) => {
         requireRole(req.actor, 'admin');
         const company = findOr404(req.params.companyId);
@@ -136,7 +136,7 @@ function companiesRoutes(store) {
         }
         const currentVersion = String(store.getCompanyMeta(company.companyId).deletionVersion);
         if (String(expectedDeletionVersion) !== currentVersion) {
-            // Something changed since the impact was shown: do not delete, ask to re-confirm.
+            // 影響件数を表示した後に変更があれば、削除を中止して再確認を求める。
             fail(409, 'CONFLICT');
         }
 

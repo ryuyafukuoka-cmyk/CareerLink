@@ -1,5 +1,5 @@
-// Dev-only mock API server. Start with `npm run dev:mock`. Data resets on every restart.
-// The mock data lives in frontend/src/mocks (ES modules), so it is loaded with dynamic import().
+// 開発用モックAPIは npm run dev:mock で起動する。再起動のたびにデータを初期化する。
+// frontend/src/mocks のデータは ES モジュールなので、動的 import() で読み込む。
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { createApp } = require('./app');

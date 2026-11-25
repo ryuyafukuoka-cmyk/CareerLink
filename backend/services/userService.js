@@ -1,4 +1,4 @@
-// User services (F-001-01). U-01 to U-07.
+// ユーザー管理サービス（F-001-01、U-01〜U-07）。
 const { ROLES, ROLE_VALUES, USER_STATUS_VALUES } = require('../common/constants');
 const { conflict, forbidden, notFound } = require('../common/errors');
 const { assertGraduationYear, assertOneOf, parseId } = require('../common/validation');
@@ -7,8 +7,8 @@ const { withTransaction } = require('../db/pool');
 const userRepository = require('../repositories/userRepository');
 const { recordOperationLog } = require('../repositories/operationLogRepository');
 
-// registerGraduationYear: a student sets their own graduation year once (U-02).
-// Order: role (403) -> value (400) -> already set (409, decided atomically by the UPDATE).
+// U-02 registerGraduationYear。学生は自分の卒業年度を1回だけ登録できる。
+// 権限（403）、入力値（400）の順に検証し、登録済みか（409）は UPDATE で原子的に判定する。
 async function registerGraduationYear(actor, year) {
     requireRole(actor, [ROLES.STUDENT]);
     assertGraduationYear(year);
@@ -17,7 +17,7 @@ async function registerGraduationYear(actor, year) {
     return userRepository.findById(Number(actor.userId));
 }
 
-// listUsers (U-03): instructor / admin only. query = req.query (all values are strings).
+// U-03 listUsers。指導員・管理者のみ。req.query の絞り込み条件を受け取る（各値は文字列）。
 async function listUsers(actor, query = {}) {
     requireRole(actor, [ROLES.INSTRUCTOR, ROLES.ADMIN]);
     const filter = {};
@@ -37,8 +37,7 @@ async function listUsers(actor, query = {}) {
     return userRepository.list(filter);
 }
 
-// getUserProfile (U-04): the person themself, or an instructor / admin.
-// The permission check comes first, so a student cannot learn whether another id exists.
+// U-04 getUserProfile。本人・指導員・管理者のみ。学生が他のIDの存在を推測できないよう、先に権限を確認する。
 async function getUserProfile(actor, userIdParam) {
     requireOwnerOrRole(actor, userIdParam, [ROLES.INSTRUCTOR, ROLES.ADMIN]);
     const id = parseId(userIdParam);
@@ -48,7 +47,7 @@ async function getUserProfile(actor, userIdParam) {
     return user;
 }
 
-// Loads a target that must be an existing student; otherwise 404.
+// 操作対象の学生を取得する。該当する学生が存在しなければ404を返す。
 async function findStudentOr404(userIdParam) {
     const id = parseId(userIdParam);
     if (id === null) throw notFound();
@@ -57,7 +56,7 @@ async function findStudentOr404(userIdParam) {
     return { id, target };
 }
 
-// updateGraduationYear (U-05): instructor / admin change a student's year.
+// U-05 updateGraduationYear。指導員と管理者が学生の卒業年度を変更する。
 async function updateGraduationYear(actor, userIdParam, year) {
     requireRole(actor, [ROLES.INSTRUCTOR, ROLES.ADMIN]);
     assertGraduationYear(year);
@@ -66,7 +65,7 @@ async function updateGraduationYear(actor, userIdParam, year) {
     return userRepository.findById(id);
 }
 
-// Log each authenticated attempt, including successful requests that repeat the current value.
+// 認証済みの操作を試行ごとに記録する。現在と同じ値を指定して成功した場合も含む。
 async function withUserChangeLog(actor, userIdParam, operationType, change) {
     const id = parseId(userIdParam);
     const entry = {
@@ -82,7 +81,7 @@ async function withUserChangeLog(actor, userIdParam, operationType, change) {
             return user;
         });
     } catch (error) {
-        // The transaction has rolled back. Keep the original API error if logging also fails.
+        // トランザクションはロールバック済み。失敗ログの記録にも失敗した場合は、元のAPIエラーを維持する。
         try {
             await recordOperationLog({ ...entry, result: 'failure' });
         } catch {
@@ -92,17 +91,17 @@ async function withUserChangeLog(actor, userIdParam, operationType, change) {
     }
 }
 
-// Both operations check the target's current role under the same lock before changing it.
+// どちらの変更でも同じロックを取得し、対象ユーザーの現在の権限を確認してから更新する。
 async function getUserForManagement(actor, id, conn) {
     if (id === null) throw notFound();
     if (String(id) === actor.userId) throw forbidden();
-    await userRepository.lockRoleChanges(conn); // first SQL statement in the transaction
+    await userRepository.lockRoleChanges(conn); // トランザクション内で最初に実行するSQL。
     const target = await userRepository.findById(id, conn);
     if (!target) throw notFound();
     return target;
 }
 
-// U-07: instructors and admins may enable or disable a student.
+// U-07。指導員と管理者は学生の利用状態を有効または無効に変更できる。
 async function setUserStatus(actor, userIdParam, status) {
     return withUserChangeLog(actor, userIdParam, 'setStatus', async (id, conn) => {
         requireRole(actor, [ROLES.INSTRUCTOR, ROLES.ADMIN]);
@@ -116,7 +115,7 @@ async function setUserStatus(actor, userIdParam, status) {
     });
 }
 
-// U-06: admins may change another user's role while retaining at least one active admin.
+// U-06。管理者は他のユーザーの権限を変更できる。有効な管理者を少なくとも1人残す。
 async function changeUserRole(actor, userIdParam, newRole) {
     return withUserChangeLog(actor, userIdParam, 'changeRole', async (id, conn) => {
         requireRole(actor, [ROLES.ADMIN]);

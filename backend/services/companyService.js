@@ -1,4 +1,4 @@
-// Company services (F-006). C-01 to C-07.
+// 企業管理（F-006）のサービス。C-01〜C-07 に対応する。
 const { ROLES } = require('../common/constants');
 const { notFound, conflict, validationError } = require('../common/errors');
 const { parseId } = require('../common/validation');
@@ -12,7 +12,7 @@ const { withTransaction } = require('../db/pool');
 const companyRepository = require('../repositories/companyRepository');
 const { recordOperationLog } = require('../repositories/operationLogRepository');
 
-// The repository's locked read also carries deletionVersion; the API `Company` does not.
+// ロック時に取得した deletionVersion を除き、APIの Company 型にそろえる。
 function toCompany({ deletionVersion, ...company }) {
     return company;
 }
@@ -44,7 +44,7 @@ async function withCompanyLog(actor, operationType, param, run) {
     }
 }
 
-// C-01 listCompanies: any signed-in role. Keyword AND regions (OR), 10 per page.
+// C-01 listCompanies。ログイン済みの全権限で利用できる。企業名と地域条件の両方で絞り、地域はいずれかに一致すればよい。1ページ10件。
 async function listCompanies(query) {
     const { keyword, regionIds, page, pageSize } = parseCompanySearchQuery(query);
     const { items, totalCount } = await companyRepository.search({
@@ -56,20 +56,20 @@ async function listCompanies(query) {
     return { items, totalCount, page, pageSize: PAGE_SIZE };
 }
 
-// C-07 listCompanyOptions
+// C-07。企業の選択候補を取得する。
 async function listCompanyOptions(query = {}) {
     const keyword = typeof query.keyword === 'string' ? query.keyword.trim() : '';
     return companyRepository.listOptions(keyword);
 }
 
-// C-03 getCompany
+// C-03。企業の詳細を取得する。
 async function getCompany(param) {
     const company = await companyRepository.findById(parseCompanyId(param));
     if (!company) throw notFound();
     return toCompany(company);
 }
 
-// C-02 createCompany: every role may register (F-006 権限). Creator = the authenticated actor.
+// C-02 createCompany。全権限で登録できる（F-006）。作成者には認証済みの操作者を記録する。
 async function createCompany(actor, body) {
     return withCompanyLog(actor, 'createCompany', null, async (entry) => {
         const input = parseCompanyInput(body);
@@ -82,8 +82,8 @@ async function createCompany(actor, body) {
     });
 }
 
-// C-04 updateCompany: every role may edit. The row lock + version bump make a pending delete
-// confirmation stale (409), so a delete never removes data nobody has seen.
+// C-04 updateCompany。全権限で編集できる。行をロックし、更新時に変更番号を進める。
+// 更新前の削除確認は409となり、変更後の内容を確認するまで削除できない。
 async function updateCompany(actor, param, body) {
     return withCompanyLog(actor, 'updateCompany', param, async (entry) => {
         const id = parseCompanyId(param);
@@ -99,7 +99,7 @@ async function updateCompany(actor, param, body) {
         });
     });
 }
-// C-05 getDeletionImpact: admin only. Counts and version from one statement.
+// C-05 getDeletionImpact は管理者のみ。件数と変更番号を単一のSQLで取得する。
 async function getDeletionImpact(actor, param) {
     requireRole(actor, [ROLES.ADMIN]);
     const impact = await companyRepository.findDeletionImpact(parseCompanyId(param));
@@ -107,9 +107,8 @@ async function getDeletionImpact(actor, param) {
     return impact;
 }
 
-// C-06 deleteCompany: admin only. Order: role (403) -> id/body shape (404/400) -> lock the company
-// row -> missing (404) -> name mismatch (400 E-212) -> version mismatch (409) -> delete everything.
-// Any failure rolls the whole transaction back.
+// C-06 deleteCompany は管理者のみ。権限（403）、ID・本文（404・400）を検証して企業行をロックする。
+// 企業なし（404）、名称不一致（400・E-212）、変更番号不一致（409）を確認してから関連データごと削除する。途中で失敗すれば全体を取り消す。
 async function deleteCompany(actor, param, body) {
     return withCompanyLog(actor, 'deleteCompany', param, async (entry) => {
         requireRole(actor, [ROLES.ADMIN]);

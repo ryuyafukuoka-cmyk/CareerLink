@@ -5,7 +5,7 @@ const { unauthorized } = require('../common/errors');
 const { startApi } = require('./http.cjs');
 
 test('record HTTP body limit accepts 512 KiB and rejects one extra byte with 400', async (t) => {
-    // Stop at authentication after the real JSON middleware, without opening a DB connection.
+    // 本体のJSONミドルウェアを通した後、認証で処理を終了し、DBへの接続を避ける。
     const api = await startApi(
         createApp({ authenticate: (req, res, next) => next(unauthorized()) }),
     );

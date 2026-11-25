@@ -1,5 +1,4 @@
-// RDS access for the company karte (K-01 to K-03). SQL lives here only. Completed records only;
-// selection stage / notes and other students' drafts are never read.
+// 企業別カルテ（K-01〜K-03）のSQLをまとめる。完了済みの活動記録だけを読み取り、選考段階・備考や他の学生の下書きは取得しない。
 const { query } = require('../db/pool');
 const {
     ACTIVITY_TYPE_BY_ID,
@@ -16,7 +15,7 @@ const FROM = `
 const BASE_WHERE = `a.record_status = 1 AND ap.company_id = ? AND o.graduation_year IS NOT NULL`;
 const ORDER = 'ORDER BY o.graduation_year DESC, a.activity_date DESC, a.activity_id DESC';
 
-// filter: { graduationYear?, activityType? } -> extra WHERE parts.
+// 任意の graduationYear と activityType を WHERE 条件に追加する。
 function filterParts(filter) {
     const where = [];
     const params = [];
@@ -34,8 +33,8 @@ function filterParts(filter) {
     return { sql: where.map((w) => ` AND ${w}`).join(''), params };
 }
 
-// K-01. Records of the company with the owner's graduation year (newest year first).
-// Returns [{ recordId, conductedOn, graduationYear, ownerUserId, ownerName, activityTypes }].
+// K-01。企業の活動記録に所有者の卒業年度を付け、新しい年度から返す。
+// 各項目は recordId、conductedOn、graduationYear、ownerUserId、ownerName、activityTypes を持つ。
 async function listRecords(companyId, filter, executor) {
     const extra = filterParts(filter);
     const rows = await query(
@@ -68,7 +67,7 @@ async function listRecords(companyId, filter, executor) {
     }));
 }
 
-// K-02. Interview questions (no answers) with category and follow-up questions.
+// K-02。面接の質問をカテゴリ・深掘り質問とともに取得する。回答は含めない。
 async function listInterviewInfo(companyId, filter, executor) {
     const extra = filterParts(filter);
     const rows = await query(
@@ -94,7 +93,7 @@ async function listInterviewInfo(companyId, filter, executor) {
     }));
 }
 
-// K-03. Exam name / format, content and preparation.
+// K-03。試験名・形式、内容、対策を取得する。
 async function listExamInfo(companyId, filter, executor) {
     const extra = filterParts(filter);
     const rows = await query(
