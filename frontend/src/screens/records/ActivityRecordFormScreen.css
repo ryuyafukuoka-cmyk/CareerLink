@@ -160,10 +160,12 @@
     outline-offset: 2px;
 }
 
+/* Selected: a tinted fill plus a double ring, so it stands out from the card around it. */
 .record-form__tile[aria-pressed='true'] {
     color: var(--color-primary);
-    background: var(--color-surface-alt);
+    background: var(--color-primary-soft);
     border-color: var(--color-primary);
+    box-shadow: 0 0 0 1px var(--color-primary);
 }
 
 /* Optional inputs: a quiet "+ 追加" link until opened. */

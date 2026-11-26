@@ -100,8 +100,12 @@ function InterviewSection({ value, onChange, needCategory, errors = {}, errorsVe
                         ref={(element) => {
                             itemRefs.current[qIndex] = element;
                         }}
-                        title={`質問${qIndex + 1}`}
-                        summary={question.content.trim() || '（未入力）'}
+                        title={`Q${qIndex + 1}`}
+                        summary={
+                            [question.category, question.content.trim()]
+                                .filter(Boolean)
+                                .join(' ／ ') || '（未入力）'
+                        }
                         open={qIndex === openIndex}
                         onOpen={() =>
                             qIndex === openIndex ? setOpenIndex(-1) : openQuestion(qIndex)
@@ -167,7 +171,7 @@ function InterviewSection({ value, onChange, needCategory, errors = {}, errorsVe
                                         <FormField
                                             label={
                                                 <span className="visually-hidden">
-                                                    {`質問${qIndex + 1}の深掘り質問${fIndex + 1}`}
+                                                    {`Q${qIndex + 1}の深掘り質問${fIndex + 1}`}
                                                 </span>
                                             }
                                             className="interview-section__followup-input"
@@ -202,7 +206,7 @@ function InterviewSection({ value, onChange, needCategory, errors = {}, errorsVe
                                 disabled={value.questions.length <= 1}
                                 onClick={() => removeQuestion(qIndex)}
                             >
-                                質問{qIndex + 1}を削除
+                                Q{qIndex + 1}を削除
                             </Button>
                         </div>
                     </AccordionItem>
