@@ -1,14 +1,16 @@
+import { useEffect, useRef, useState } from 'react';
 import { QUESTION_CATEGORY_OPTIONS } from '@shared/definitions';
+import AccordionItem from '@/components/Accordion/AccordionItem.jsx';
 import Button from '@/components/Button/Button.jsx';
 import FormField from '@/components/FormField/FormField.jsx';
 import Select from '@/components/Select/Select.jsx';
 import TextArea from '@/components/TextArea/TextArea.jsx';
 import TextInput from '@/components/TextInput/TextInput.jsx';
-import { RECORD_NUMBER_LIMITS } from '../../../../backend/common/recordInput.mjs';
 import { emptyQuestion } from './sectionDefaults.js';
 import './InterviewSection.css';
 
-// Interview section of the record form (F-004-01).
+// Interview details (questions and reflections), shown in the section drawer (F-004-01).
+// Time, format and interviewer count are in InterviewBasics.
 //
 // value:        form state, see emptyInterview() in sectionDefaults.js
 // onChange:     called with the next value (the whole interview object)
@@ -16,7 +18,39 @@ import './InterviewSection.css';
 //               this applies to drafts too). When false the category may stay empty.
 // errors:       optional { 'durationMinutes': 'message', 'questions.0.category': 'message', ... }
 //               keys are the API field names without the leading "interview."
-function InterviewSection({ value, onChange, needCategory, errors = {} }) {
+// errorsVersion: changes on every check, so the first question with an error is opened again.
+//
+// Questions are an accordion: exactly one is expanded, to keep the form short.
+function InterviewSection({ value, onChange, needCategory, errors = {}, errorsVersion }) {
+    const [openIndex, setOpenIndex] = useState(0);
+    const [checked, setChecked] = useState(null);
+
+    const hasError = (index) =>
+        Object.keys(errors).some((key) => key.startsWith(`questions.${index}.`));
+
+    // After a check, show an error if the open question has none but another one does.
+    if (checked !== errorsVersion) {
+        setChecked(errorsVersion);
+        const first = value.questions.findIndex((_, i) => hasError(i));
+        if (first >= 0 && !hasError(openIndex)) setOpenIndex(first);
+    }
+
+    // After the person adds or picks a question, bring it into view once the others have closed.
+    const itemRefs = useRef([]);
+    const [scrollRequest, setScrollRequest] = useState(null);
+    useEffect(() => {
+        if (!scrollRequest) return undefined;
+        const timer = setTimeout(() => {
+            itemRefs.current[scrollRequest.index]?.scrollIntoView({ block: 'nearest' });
+        }, 250);
+        return () => clearTimeout(timer);
+    }, [scrollRequest]);
+
+    function openQuestion(index) {
+        setOpenIndex(index);
+        setScrollRequest({ index });
+    }
+
     const set = (field, next) => onChange({ ...value, [field]: next });
     const fromEvent = (field) => (event) => set(field, event.target.value);
 
@@ -25,12 +59,15 @@ function InterviewSection({ value, onChange, needCategory, errors = {} }) {
             'questions',
             value.questions.map((q, i) => (i === index ? { ...q, ...patch } : q)),
         );
-    const addQuestion = () => set('questions', [...value.questions, emptyQuestion()]);
-    const removeQuestion = (index) =>
-        set(
-            'questions',
-            value.questions.filter((_, i) => i !== index),
-        );
+    const addQuestion = () => {
+        set('questions', [...value.questions, emptyQuestion()]);
+        openQuestion(value.questions.length);
+    };
+    const removeQuestion = (index) => {
+        const next = value.questions.filter((_, i) => i !== index);
+        set('questions', next);
+        setOpenIndex(Math.min(index, next.length - 1));
+    };
 
     const setFollowUp = (qIndex, fIndex, text) =>
         setQuestion(qIndex, {
@@ -45,36 +82,6 @@ function InterviewSection({ value, onChange, needCategory, errors = {} }) {
 
     return (
         <div className="interview-section">
-            <FormField label="面接時間（分）" required error={errors.durationMinutes}>
-                <TextInput
-                    type="number"
-                    inputMode="numeric"
-                    {...RECORD_NUMBER_LIMITS.duration}
-                    step="1"
-                    value={value.durationMinutes}
-                    onChange={fromEvent('durationMinutes')}
-                />
-            </FormField>
-
-            <FormField label="面接形式" required error={errors.interviewFormat}>
-                <TextInput
-                    placeholder="個人面接・集団面接・オンラインなど"
-                    value={value.interviewFormat}
-                    onChange={fromEvent('interviewFormat')}
-                />
-            </FormField>
-
-            <FormField label="面接官の人数" required error={errors.interviewerCount}>
-                <TextInput
-                    type="number"
-                    inputMode="numeric"
-                    {...RECORD_NUMBER_LIMITS.interviewerCount}
-                    step="1"
-                    value={value.interviewerCount}
-                    onChange={fromEvent('interviewerCount')}
-                />
-            </FormField>
-
             <div className="interview-section__questions">
                 <h3 className="interview-section__heading">
                     質問<span className="interview-section__required">必須（1件以上）</span>
@@ -91,9 +98,17 @@ function InterviewSection({ value, onChange, needCategory, errors = {} }) {
                 )}
 
                 {value.questions.map((question, qIndex) => (
-                    <fieldset key={qIndex} className="interview-section__question">
-                        <legend>質問{qIndex + 1}</legend>
-
+                    <AccordionItem
+                        key={qIndex}
+                        ref={(element) => {
+                            itemRefs.current[qIndex] = element;
+                        }}
+                        title={`質問${qIndex + 1}`}
+                        summary={question.content.trim() || '（未入力）'}
+                        open={qIndex === openIndex}
+                        onOpen={() => openQuestion(qIndex)}
+                        invalid={hasError(qIndex)}
+                    >
                         <FormField
                             label="質問カテゴリ"
                             required={needCategory}
@@ -179,7 +194,7 @@ function InterviewSection({ value, onChange, needCategory, errors = {} }) {
                                 質問{qIndex + 1}を削除
                             </Button>
                         </div>
-                    </fieldset>
+                    </AccordionItem>
                 ))}
 
                 <Button variant="secondary" onClick={addQuestion}>

@@ -81,6 +81,7 @@
     --rail-gap: 12px; /* space between the rail and the window edge */
     --content-max-width: 1200px;
     --form-max-width: 720px;
+    --form-wide-max-width: 960px;
 
     /* Layers */
     --z-sticky: 100;

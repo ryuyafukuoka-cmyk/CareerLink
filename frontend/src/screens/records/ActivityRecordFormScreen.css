@@ -2,7 +2,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
-    max-width: var(--form-max-width);
+    max-width: var(--form-wide-max-width);
     margin: 0 auto;
     padding: var(--space-5);
 }
@@ -66,8 +66,22 @@
 
 /* ---- Redesign: progress, locked fields, empty round list, sticky action bar ---- */
 
+/* The progress bar stays under the app header while the form scrolls. */
 .record-form__progress {
-    margin-bottom: var(--space-5);
+    position: sticky;
+    top: var(--header-height);
+    z-index: 5;
+    margin: calc(var(--space-5) * -1) calc(var(--space-5) * -1) var(--space-5);
+    padding: var(--space-3) var(--space-5);
+    background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+    border-bottom: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    backdrop-filter: blur(6px);
+}
+
+/* A focused input is not left hidden behind the sticky bars. */
+.record-form__card :is(input, select, textarea, button, summary) {
+    scroll-margin: calc(var(--header-height) + 5rem) 0 5rem;
 }
 
 .record-form__locked {
@@ -106,6 +120,26 @@
     backdrop-filter: blur(6px);
 }
 
+/* Button that opens the section's detail drawer. */
+.record-form__details {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.record-form__details-status {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.record-form__details-error {
+    margin: var(--space-2) 0 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-danger);
+    animation: fade-rise-in var(--duration-base) var(--ease-out) backwards;
+}
+
 /* Each section opens with a quiet fade when its type is ticked. */
 .record-form__section {
     animation: record-form-section-in var(--duration-base) var(--ease-out) backwards;
@@ -119,7 +153,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .record-form__section {
+    .record-form__section,
+    .record-form__details-error {
         animation: none;
     }
 }

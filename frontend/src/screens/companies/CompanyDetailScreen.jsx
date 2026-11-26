@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, generatePath, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ROLES, getRegionName } from '@shared/definitions';
 import { getCompany } from '@/api/companies.js';
 import { useAuth } from '@/auth/useAuth.js';
@@ -10,8 +10,10 @@ import ErrorMessage from '@/components/ErrorMessage/ErrorMessage.jsx';
 import Loading from '@/components/Loading/Loading.jsx';
 import Notice from '@/components/Notice/Notice.jsx';
 import { getMessage } from '@/messages';
+import { useOverlay, useOverlayResult } from '@/hooks/useOverlay.js';
 import { PATHS } from '@/routes/paths.js';
 import CompanyDeleteDialog from './CompanyDeleteDialog.jsx';
+import CompanyFormDialog from './CompanyFormDialog.jsx';
 import CompanyKarteSection from './CompanyKarteSection.jsx';
 import './CompanyDetailScreen.css';
 
@@ -29,7 +31,17 @@ function CompanyDetailScreen() {
     const [reloadCount, setReloadCount] = useState(0);
     const [result, setResult] = useState({ key: null, company: null, error: null });
     const requestKey = `${companyId}|${reloadCount}`;
-    const loading = result.key !== requestKey;
+    // Reloading the same company (after an edit) keeps it on screen until the new data arrives.
+    const reloading = Boolean(result.company) && result.key?.startsWith(`${companyId}|`);
+    const loading = result.key !== requestKey && !reloading;
+
+    // SC-04-03 (edit) opens over this page.
+    const editForm = useOverlay('companyEdit');
+    const [updatedId, setUpdatedId] = useState(null);
+    useOverlayResult('companyEdit', (saved) => {
+        setUpdatedId(saved.companyId);
+        setReloadCount((n) => n + 1);
+    });
 
     useEffect(() => {
         let cancelled = false;
@@ -62,15 +74,16 @@ function CompanyDetailScreen() {
         <main className="company-detail">
             <Link to={PATHS.companies}>← 企業一覧</Link>
 
-            {state?.noticeId && <Notice message={getMessage(state.noticeId)} />}
+            {updatedId === company.companyId ? (
+                <Notice message={getMessage('S-102')} />
+            ) : (
+                state?.noticeId && <Notice message={getMessage(state.noticeId)} />
+            )}
 
             <div className="company-detail__header">
                 <h1>{company.nameOfficial}</h1>
                 <div className="company-detail__actions">
-                    <Button
-                        variant="secondary"
-                        onClick={() => navigate(generatePath(PATHS.companyEdit, { companyId }))}
-                    >
+                    <Button variant="secondary" onClick={() => editForm.open()}>
                         編集
                     </Button>
                     {role === ROLES.ADMIN && (
@@ -105,6 +118,8 @@ function CompanyDetailScreen() {
                 <h2 id="company-karte-heading">過去の活動記録（企業別カルテ）</h2>
                 <CompanyKarteSection companyId={companyId} />
             </section>
+
+            <CompanyFormDialog overlay={editForm} company={company} />
 
             {deleteOpen && (
                 <CompanyDeleteDialog

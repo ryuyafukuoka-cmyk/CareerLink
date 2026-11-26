@@ -11,10 +11,12 @@ import FormField from '@/components/FormField/FormField.jsx';
 import Loading from '@/components/Loading/Loading.jsx';
 import Select from '@/components/Select/Select.jsx';
 import TextInput from '@/components/TextInput/TextInput.jsx';
+import { useOverlay, useOverlayResult } from '@/hooks/useOverlay.js';
 import { useRetryAfter } from '@/hooks/useRetryAfter.js';
 import { useSubmitLock } from '@/hooks/useSubmitLock.js';
 import { getErrorMessage, getMessage } from '@/messages';
 import { PATHS } from '@/routes/paths.js';
+import CompanyFormDialog from '@/screens/companies/CompanyFormDialog.jsx';
 import { isRealDate } from '@/utils/date.js';
 import { fieldMessage, studentOptions } from './roundHelpers.js';
 import './RoundScreens.css';
@@ -38,6 +40,15 @@ function RoundForm({ companies, students }) {
     const [errors, setErrors] = useState({}); // { field: messageId }
     const [formError, setFormError] = useState(null);
     const [resultUnknown, setResultUnknown] = useState(false);
+
+    // SC-04-03 opens over this form; the new company is then selected.
+    const companyForm = useOverlay('companyCreate');
+    const [addedCompanies, setAddedCompanies] = useState([]);
+    useOverlayResult('companyCreate', (saved) => {
+        setAddedCompanies((list) => [...list, saved]);
+        set('companyId', saved.companyId);
+    });
+    const companyList = [...companies, ...addedCompanies];
 
     const set = (field, value) => setValues((current) => ({ ...current, [field]: value }));
     const errorText = (field) => (errors[field] ? fieldMessage(field, errors[field]) : undefined);
@@ -98,73 +109,87 @@ function RoundForm({ companies, students }) {
     const cancelPath = state?.returnTo ?? PATHS.rounds;
 
     return (
-        <form className="round-screen__card" onSubmit={handleSubmit} noValidate>
-            {retry.secondsLeft > 0 && (
-                <ErrorMessage message={getMessage('E-009', { seconds: retry.secondsLeft })} />
-            )}
-            {formError && <ErrorMessage message={formError} />}
-            {resultUnknown && (
-                <p>
-                    保存できたか分からない場合は、
-                    <Link to={PATHS.rounds}>応募回の一覧</Link>で確認してください。
-                </p>
-            )}
+        <>
+            <form className="round-screen__card" onSubmit={handleSubmit} noValidate>
+                {retry.secondsLeft > 0 && (
+                    <ErrorMessage message={getMessage('E-009', { seconds: retry.secondsLeft })} />
+                )}
+                {formError && <ErrorMessage message={formError} />}
+                {resultUnknown && (
+                    <p>
+                        保存できたか分からない場合は、
+                        <Link to={PATHS.rounds}>応募回の一覧</Link>で確認してください。
+                    </p>
+                )}
 
-            {isAdmin && (
-                <FormField label="対象学生" required error={errorText('studentUserId')}>
+                {isAdmin && (
+                    <FormField label="対象学生" required error={errorText('studentUserId')}>
+                        <Select
+                            placeholder="学生を選択"
+                            options={studentOptions(students)}
+                            value={values.studentUserId}
+                            onChange={(event) => set('studentUserId', event.target.value)}
+                            disabled={submitting}
+                        />
+                    </FormField>
+                )}
+
+                <FormField label="企業" required error={errorText('companyId')}>
                     <Select
-                        placeholder="学生を選択"
-                        options={studentOptions(students)}
-                        value={values.studentUserId}
-                        onChange={(event) => set('studentUserId', event.target.value)}
+                        placeholder="企業を選択"
+                        options={companyList.map((c) => ({
+                            value: c.companyId,
+                            label: c.nameOfficial,
+                        }))}
+                        value={values.companyId}
+                        onChange={(event) => set('companyId', event.target.value)}
                         disabled={submitting}
                     />
                 </FormField>
-            )}
+                <p className="round-screen__hint">
+                    企業が見つからない場合は、先に
+                    <button
+                        type="button"
+                        className="round-screen__link"
+                        disabled={submitting}
+                        onClick={() => companyForm.open()}
+                    >
+                        企業を登録
+                    </button>
+                    してください。
+                </p>
 
-            <FormField label="企業" required error={errorText('companyId')}>
-                <Select
-                    placeholder="企業を選択"
-                    options={companies.map((c) => ({ value: c.companyId, label: c.nameOfficial }))}
-                    value={values.companyId}
-                    onChange={(event) => set('companyId', event.target.value)}
-                    disabled={submitting}
-                />
-            </FormField>
-            <p className="round-screen__hint">
-                企業が見つからない場合は、先に<Link to={PATHS.companyNew}>企業を登録</Link>
-                してください。
-            </p>
-
-            <FormField
-                label="応募日"
-                error={errorText('applicationDate')}
-                hint="任意です。YYYY/MM/DD の形式で入力してください。"
-            >
-                <TextInput
-                    placeholder="2026/10/01"
-                    value={values.applicationDate}
-                    onChange={(event) => set('applicationDate', event.target.value)}
-                    disabled={submitting}
-                />
-            </FormField>
-            <p className="round-screen__hint">
-                選考段階は「未応募・検討中」で登録されます。登録後に変更できます。
-            </p>
-
-            <div className="round-screen__actions">
-                <Button
-                    variant="secondary"
-                    disabled={submitting}
-                    onClick={() => navigate(cancelPath)}
+                <FormField
+                    label="応募日"
+                    error={errorText('applicationDate')}
+                    hint="任意です。YYYY/MM/DD の形式で入力してください。"
                 >
-                    キャンセル
-                </Button>
-                <Button type="submit" loading={submitting} disabled={retry.secondsLeft > 0}>
-                    登録する
-                </Button>
-            </div>
-        </form>
+                    <TextInput
+                        placeholder="2026/10/01"
+                        value={values.applicationDate}
+                        onChange={(event) => set('applicationDate', event.target.value)}
+                        disabled={submitting}
+                    />
+                </FormField>
+                <p className="round-screen__hint">
+                    選考段階は「未応募・検討中」で登録されます。登録後に変更できます。
+                </p>
+
+                <div className="round-screen__actions">
+                    <Button
+                        variant="secondary"
+                        disabled={submitting}
+                        onClick={() => navigate(cancelPath)}
+                    >
+                        キャンセル
+                    </Button>
+                    <Button type="submit" loading={submitting} disabled={retry.secondsLeft > 0}>
+                        登録する
+                    </Button>
+                </div>
+            </form>
+            <CompanyFormDialog overlay={companyForm} />
+        </>
     );
 }
 

@@ -11,7 +11,6 @@ import UserRoleScreen from '@/screens/admin/UserRoleScreen.jsx';
 import LoginErrorScreen from '@/screens/auth/LoginErrorScreen.jsx';
 import LoginScreen from '@/screens/auth/LoginScreen.jsx';
 import CompanyDetailScreen from '@/screens/companies/CompanyDetailScreen.jsx';
-import CompanyFormScreen from '@/screens/companies/CompanyFormScreen.jsx';
 import CompanyListScreen from '@/screens/companies/CompanyListScreen.jsx';
 import ActivityRecordFormScreen from '@/screens/records/ActivityRecordFormScreen.jsx';
 import RecordDetailScreen from '@/screens/records/RecordDetailScreen.jsx';
@@ -32,8 +31,6 @@ export const SCREEN_ELEMENTS = {
     [PATHS.firstRegistration]: <FirstRegistrationScreen />,
     [PATHS.home]: <HomeScreen />,
     [PATHS.companies]: <CompanyListScreen />,
-    [PATHS.companyNew]: <CompanyFormScreen />,
-    [PATHS.companyEdit]: <CompanyFormScreen />,
     [PATHS.companyDetail]: <CompanyDetailScreen />,
     [PATHS.records]: <RecordListScreen />,
     [PATHS.recordNew]: <ActivityRecordFormScreen />,

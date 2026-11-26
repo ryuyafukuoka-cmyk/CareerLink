@@ -24,9 +24,7 @@ const NODES = {
     [PATHS.searchRecordDetail]: { label: '記録詳細', parent: PATHS.searchResults },
 
     [PATHS.companies]: { label: '企業一覧', parent: PATHS.home },
-    [PATHS.companyNew]: { label: '企業登録', parent: PATHS.companies },
     [PATHS.companyDetail]: { label: '企業詳細', parent: PATHS.companies },
-    [PATHS.companyEdit]: { label: '編集', parent: PATHS.companyDetail },
 
     [PATHS.adminUsers]: { label: 'ユーザ管理', parent: 'group:admin' },
     [PATHS.adminUserDetail]: { label: 'ユーザ詳細', parent: PATHS.adminUsers },

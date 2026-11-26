@@ -1,4 +1,4 @@
-// Route table for every screen ID (SC-XX-XX). 24 screen IDs, 23 implemented screens.
+// Route table for every screen ID (SC-XX-XX) that has its own page.
 //
 // access:
 //   'public'              no login needed
@@ -11,6 +11,7 @@
 // Screens not listed there show PlaceholderPage.
 //
 // SC-03-03 is the same implementation as SC-02-02 (shared detail screen).
+// SC-04-03 (company form) is a dialog over the company list / detail, so it has no route.
 // SC-05-01 is not used. SC-90-01 to 03 are shared UI parts, not routes.
 
 import { ROLES } from '@shared/definitions';
@@ -57,9 +58,7 @@ export const SCREENS = [
     },
 
     { screenId: 'SC-04-01', name: '企業一覧', path: PATHS.companies, access: 'any' },
-    { screenId: 'SC-04-03', name: '企業登録', path: PATHS.companyNew, access: 'any' },
     { screenId: 'SC-04-02', name: '企業別カルテ', path: PATHS.companyDetail, access: 'any' },
-    { screenId: 'SC-04-03', name: '企業編集', path: PATHS.companyEdit, access: 'any' },
 
     { screenId: 'SC-06-01', name: 'ユーザ一覧', path: PATHS.adminUsers, access: STAFF },
     { screenId: 'SC-06-02', name: 'ユーザ詳細・管理', path: PATHS.adminUserDetail, access: STAFF },

@@ -1,11 +1,20 @@
 // Validate the same payload that the form sends to the API.
-import { getSectionDefinitions } from '@shared/definitions';
+import { SAVE_MODES, getSectionDefinitions } from '@shared/definitions';
 import { getMessage } from '@/messages/index.js';
 import { validateRecordContent } from '../../../../backend/common/recordInput.mjs';
+import { isFullInterviewFormat } from './interviewFormat.js';
 
 export function validateActivityRecord(input, mode, roundStage) {
     const { details } = validateRecordContent(input, mode, roundStage);
     const errors = Object.fromEntries(details.map(({ field, messageId }) => [field, messageId]));
+
+    // Completing needs both the style and the method (the server only sees one string).
+    const interview = input.sections?.interview;
+    if (mode === SAVE_MODES.COMPLETE && interview) {
+        if (!isFullInterviewFormat(interview.interviewFormat)) {
+            errors['sections.interview.interviewFormat'] ??= 'E-201';
+        }
+    }
 
     if (!input.companyId) errors.companyId = 'E-201';
     if (!input.applicationRoundId) errors.applicationRoundId = 'E-214';

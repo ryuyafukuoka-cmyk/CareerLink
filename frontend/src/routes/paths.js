@@ -22,9 +22,7 @@ export const PATHS = Object.freeze({
     searchRecordDetail: '/search/records/:recordId',
     // SC-04
     companies: '/companies',
-    companyNew: '/companies/new',
     companyDetail: '/companies/:companyId',
-    companyEdit: '/companies/:companyId/edit',
     // SC-06
     adminUsers: '/admin/users',
     adminUserDetail: '/admin/users/:userId',

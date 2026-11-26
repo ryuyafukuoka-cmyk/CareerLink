@@ -32,19 +32,6 @@
     color: var(--color-danger);
 }
 
-.interview-section__question {
-    margin: 0 0 var(--space-4);
-    padding: var(--space-4);
-    background: var(--color-surface);
-    border: var(--border-width) solid var(--color-border);
-    border-radius: var(--radius-md);
-}
-
-.interview-section__question > legend {
-    padding: 0 var(--space-2);
-    font-weight: var(--font-weight-bold);
-}
-
 .interview-section__followup {
     display: flex;
     align-items: flex-start;
@@ -62,4 +49,27 @@
     display: flex;
     justify-content: flex-end;
     margin-top: var(--space-3);
+}
+
+/* Two related items side by side; one column when the form is narrow. */
+.interview-section__row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+    align-items: start;
+    gap: 0 var(--space-4);
+}
+
+.interview-section__row > .form-field {
+    min-width: 0;
+}
+
+.interview-section__other {
+    margin-top: var(--space-2);
+    animation: fade-rise-in var(--duration-base) var(--ease-out) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .interview-section__other {
+        animation: none;
+    }
 }

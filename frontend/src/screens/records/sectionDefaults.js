@@ -1,3 +1,5 @@
+import { composeInterviewFormat, parseInterviewFormat } from './interviewFormat.js';
+
 // Starting values and payload helpers for the record form sections.
 // Form state keeps every input as a string (so a half-typed number is not lost);
 // the toXxxPayload functions turn it into the API shape when saving.
@@ -6,7 +8,10 @@ export const emptyQuestion = () => ({ category: '', content: '', answer: '', fol
 
 export const emptyInterview = () => ({
     durationMinutes: '',
-    interviewFormat: '',
+    formatStyle: '',
+    formatStyleOther: '',
+    formatMethod: '',
+    formatMethodOther: '',
     interviewerCount: '',
     questions: [emptyQuestion()],
     impression: '',
@@ -59,7 +64,7 @@ const toTextOrUndefined = (text) => {
 export function toInterviewPayload(form) {
     return {
         durationMinutes: toNumberOrNull(form.durationMinutes),
-        interviewFormat: toTextOrUndefined(form.interviewFormat) ?? null,
+        interviewFormat: composeInterviewFormat(form) || null,
         interviewerCount: toNumberOrNull(form.interviewerCount),
         questions: form.questions.map((q) => ({
             category: q.category === '' ? null : q.category,
@@ -131,6 +136,7 @@ function fromInterviewPayload(api) {
     delete rest.questions; // filled from the saved questions below
     return {
         ...fillFrom(rest, api),
+        ...parseInterviewFormat(api.interviewFormat),
         questions: api.questions?.length
             ? api.questions.map((q) => ({
                   category: textOf(q.category),

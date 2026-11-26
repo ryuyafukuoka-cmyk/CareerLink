@@ -1,0 +1,15 @@
+.company-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.company-form__error {
+    animation: fade-rise-in var(--duration-base) var(--ease-out) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .company-form__error {
+        animation: none;
+    }
+}

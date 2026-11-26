@@ -84,13 +84,6 @@ const MENU_TREE = [
                 icon: Building2,
                 roles: ALL_ROLES,
             },
-            {
-                id: 'companyNew',
-                label: '企業を登録',
-                path: PATHS.companyNew,
-                icon: Plus,
-                roles: ALL_ROLES,
-            },
         ],
     },
     {

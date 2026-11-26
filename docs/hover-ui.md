@@ -22,6 +22,8 @@ Handoff for a new chat. Read this whole file first. Branch: `ui/redesign-v2`. Fr
 | Motion tokens and shared enter animation                                   | `styles/tokens.css`, `styles/motion.css`, page fade in `AppLayout`, button press in `Button.css` |
 | Gallery demo of Dialog / Drawer / stacked / dirty                          | `gallery/GalleryPage.jsx` (open `/gallery.html`)                                                 |
 
+Step 1 of the work breakdown (company create and edit dialogs, `screens/companies/CompanyFormDialog.jsx`) is done. The record form and round create pages open the same dialog for "register company".
+
 Component props are in `components/README.md` (section "Hover UIs (overlays) and motion").
 
 ## Decision
@@ -65,6 +67,8 @@ Check when a new overlay is added: count the fields and long text areas. If it c
 Peek rules: the full detail page (SC-02-02 / SC-03-03) stays and keeps its URL, because links and the breadcrumb still point to it. The peek only calls the same API (S-02, L-02), so permissions (drafts, hidden names) are enforced by the server as before. Open from a row action or a click on the row.
 
 Stays a full page: login, first graduation year, search conditions, record detail, company detail (karte), all list pages.
+
+3. **Activity sections open in drawers (owner, 11/26).** On the record form page, general items (time, format, counts, names) stay on the page; long text and interview questions are typed in a per-section drawer (`screens/records/RecordSection.jsx`). Revisit decision 1 (whole record form as a drawer) before step 4, to avoid drawers stacked on a drawer.
 
 ## Rules
 

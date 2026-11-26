@@ -79,6 +79,21 @@
     color: var(--color-text-muted);
 }
 
+.round-screen__link {
+    padding: 0;
+    font: inherit;
+    color: var(--color-primary);
+    text-decoration: underline;
+    cursor: pointer;
+    background: none;
+    border: 0;
+}
+
+.round-screen__link:disabled {
+    color: var(--color-disabled-text);
+    cursor: not-allowed;
+}
+
 .round-screen__actions {
     display: flex;
     align-items: center;

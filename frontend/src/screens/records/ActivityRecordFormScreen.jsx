@@ -32,17 +32,18 @@ import Notice from '@/components/Notice/Notice.jsx';
 import Progress from '@/components/Progress/Progress.jsx';
 import RadioGroup from '@/components/RadioGroup/RadioGroup.jsx';
 import Tooltip from '@/components/Tooltip/Tooltip.jsx';
+import { useOverlay, useOverlayResult } from '@/hooks/useOverlay.js';
 import { useRetryAfter } from '@/hooks/useRetryAfter.js';
 import { useSubmitLock } from '@/hooks/useSubmitLock.js';
 import { getErrorMessage, getMessage } from '@/messages/index.js';
 import { PATHS } from '@/routes/paths.js';
+import CompanyFormDialog from '@/screens/companies/CompanyFormDialog.jsx';
 import { numberRounds, studentOptions } from '@/screens/rounds/roundHelpers.js';
 import {
     ACTIVITY_RECORD_BODY_TOO_LARGE_MESSAGE,
     isRecordBodyTooLarge,
 } from '../../../../backend/common/recordInput.mjs';
-import InterviewSection from './InterviewSection.jsx';
-import SimpleSection from './SimpleSection.jsx';
+import RecordSection from './RecordSection.jsx';
 import { emptySections, fromSectionsPayload, toSectionsPayload } from './sectionDefaults.js';
 import {
     getFieldErrorTexts,
@@ -61,9 +62,10 @@ const latestRoundId = (rounds) =>
 // The form, for a new record (/records/new) or for editing one (/records/:recordId/edit).
 // Companies (and students, for admins creating a record) are already loaded; `record` is set in edit mode.
 //
-// Create mode: moving to the round / company form and back keeps the input: the form values go in
-// location.state.form (as `returnState`), and the other screen returns `newRoundId` / `newCompanyId`
-// which are selected here. The round screen of a round (SC-02-05) opens this screen with
+// Create mode: a new company is registered in a dialog over this form and then selected.
+// Moving to the round form and back keeps the input: the form values go in location.state.form
+// (as `returnState`), and that screen returns `newRoundId`, which is selected here.
+// The round screen of a round (SC-02-05) opens this screen with
 // { applicationRoundId, companyId, studentUserId }.
 // Edit mode: student, company and round are fixed. A draft has [下書き保存] (R-05) and [記入完了] (R-06);
 // a completed record has [保存] (R-07) and stays completed.
@@ -92,7 +94,7 @@ function RecordForm({ companies, students, record }) {
             studentUserId: isAdmin
                 ? (saved.studentUserId ?? incoming.studentUserId ?? '')
                 : user.userId,
-            companyId: incoming.newCompanyId ?? saved.companyId ?? incoming.companyId ?? '',
+            companyId: saved.companyId ?? incoming.companyId ?? '',
             applicationRoundId:
                 incoming.newRoundId ??
                 saved.applicationRoundId ??
@@ -100,13 +102,13 @@ function RecordForm({ companies, students, record }) {
                 '',
             conductedOn: saved.conductedOn ?? '',
             activityTypes: saved.activityTypes ?? [],
-            // Section inputs by type. Kept with the form when moving to the company / round form and back.
+            // Section inputs by type. Kept with the form when moving to the round form and back.
             sections: { ...emptySections(), ...saved.sections },
         };
     });
     const [values, setValues] = useState(initialValues);
     // What counts as "typed input" for the unsaved-changes warning. A new form is compared with an
-    // empty one (so input restored from the company / round form still counts); an edit with the loaded record.
+    // empty one (so input restored from the round form still counts); an edit with the loaded record.
     const dirtyKey = (v) =>
         JSON.stringify({
             conductedOn: v.conductedOn,
@@ -179,7 +181,16 @@ function RecordForm({ companies, students, record }) {
         set('activityTypes', next);
     }
 
-    // Go to the round / company form and come back to this screen with the input kept.
+    // SC-04-03 opens over this form, so the input stays as it is.
+    const companyForm = useOverlay('companyCreate');
+    const [addedCompanies, setAddedCompanies] = useState([]);
+    useOverlayResult('companyCreate', (saved) => {
+        setAddedCompanies((list) => [...list, saved]);
+        changeCompany(saved.companyId);
+    });
+    const companyList = [...companies, ...addedCompanies];
+
+    // Go to the round form and come back to this screen with the input kept.
     function openOther(path, extra) {
         navigate(path, {
             state: {
@@ -220,13 +231,28 @@ function RecordForm({ companies, students, record }) {
             r.applicationDate ? `・応募日 ${r.applicationDate}` : ''
         }（ID ${r.applicationRoundId}）`,
     }));
-    // Basic items done (shown as the progress bar at the top of the form).
-    const basicsDone = [
+    // Progress bar at the top: the four basic items, then one step per selected activity type,
+    // done when nothing in that section would stop completing the record.
+    const completionErrors = Object.keys(
+        validateActivityRecord(
+            {
+                activityTypes: values.activityTypes,
+                sections: toSectionsPayload(values.activityTypes, values.sections),
+            },
+            SAVE_MODES.COMPLETE,
+            roundStage ?? 'considering',
+        ),
+    );
+    const progressSteps = [
         values.companyId,
         selectedRoundId,
         values.activityTypes.length > 0,
         values.conductedOn.trim(),
-    ].filter(Boolean).length;
+        ...values.activityTypes.map(
+            (type) => !completionErrors.some((key) => key.startsWith(`sections.${type}`)),
+        ),
+    ];
+    const stepsDone = progressSteps.filter(Boolean).length;
     const lockedTip = isEdit ? '保存後は変更できません' : '';
 
     function showFieldErrors(errors, mode) {
@@ -326,221 +352,220 @@ function RecordForm({ companies, students, record }) {
     const leave = () => navigate(cancelPath);
 
     return (
-        <form className="record-form__card" onSubmit={(event) => event.preventDefault()} noValidate>
-            <Progress
-                className="record-form__progress"
-                segments={4}
-                value={basicsDone}
-                label="基本情報の入力"
-                showValue
-                tone={basicsDone === 4 ? 'success' : 'primary'}
-            />
-            {retry.secondsLeft > 0 && (
-                <ErrorMessage message={getMessage('E-009', { seconds: retry.secondsLeft })} />
-            )}
-            {formError && <Notice tone="error" message={formError} />}
-            {resultUnknown && (
-                <p>
-                    保存できたか分からない場合は、
-                    <Link to={PATHS.records}>活動記録の一覧</Link>で確認してください。
-                </p>
-            )}
-
-            <fieldset className="record-form__fieldset" disabled={submitting}>
-                {isAdmin && !isEdit && (
-                    <FormField label="対象学生" required error={fieldErrors.ownerUserId}>
-                        <Combobox
-                            placeholder="学生を選択（名前で絞り込めます）"
-                            options={studentOptions(students)}
-                            value={values.studentUserId}
-                            onChange={changeStudent}
-                        />
-                    </FormField>
+        <>
+            <form
+                className="record-form__card"
+                onSubmit={(event) => event.preventDefault()}
+                noValidate
+            >
+                <Progress
+                    className="record-form__progress"
+                    segments={progressSteps.length}
+                    value={stepsDone}
+                    label="入力状況"
+                    showValue
+                    tone={stepsDone === progressSteps.length ? 'success' : 'primary'}
+                />
+                {retry.secondsLeft > 0 && (
+                    <ErrorMessage message={getMessage('E-009', { seconds: retry.secondsLeft })} />
                 )}
-
-                <FormField label="企業" required error={fieldErrors.companyId}>
-                    <Tooltip content={lockedTip} focusable className="record-form__locked">
-                        <Combobox
-                            placeholder="企業を選択（名前で絞り込めます）"
-                            options={companies.map((c) => ({
-                                value: c.companyId,
-                                label: c.nameOfficial,
-                            }))}
-                            value={values.companyId}
-                            onChange={changeCompany}
-                            disabled={isEdit}
-                        />
-                    </Tooltip>
-                </FormField>
-                {isEdit ? (
-                    <p className="record-form__hint">
-                        企業と応募回は保存後に変更できません。誤っている場合は、この記録を削除して登録し直してください。
-                    </p>
-                ) : (
-                    <p className="record-form__hint">
-                        企業が見つからない場合は、
-                        <button
-                            type="button"
-                            className="record-form__link"
-                            onClick={() => openOther(PATHS.companyNew)}
-                        >
-                            企業を登録
-                        </button>
-                        してください。
+                {formError && <Notice tone="error" message={formError} />}
+                {resultUnknown && (
+                    <p>
+                        保存できたか分からない場合は、
+                        <Link to={PATHS.records}>活動記録の一覧</Link>で確認してください。
                     </p>
                 )}
 
-                <FormField
-                    group
-                    label="応募回"
-                    required
-                    hint="応募回は、保存の前に登録しておく必要があります。"
-                    error={fieldErrors.applicationRoundId}
-                >
-                    {roundOptions.length > 0 ? (
+                <fieldset className="record-form__fieldset" disabled={submitting}>
+                    {isAdmin && !isEdit && (
+                        <FormField label="対象学生" required error={fieldErrors.ownerUserId}>
+                            <Combobox
+                                placeholder="学生を選択（名前で絞り込めます）"
+                                options={studentOptions(students)}
+                                value={values.studentUserId}
+                                onChange={changeStudent}
+                            />
+                        </FormField>
+                    )}
+
+                    <FormField label="企業" required error={fieldErrors.companyId}>
                         <Tooltip content={lockedTip} focusable className="record-form__locked">
-                            <RadioGroup
-                                variant="card"
-                                options={roundOptions}
-                                value={selectedRoundId}
-                                onChange={(value) => set('applicationRoundId', value)}
-                                disabled={isEdit || roundsLoading}
+                            <Combobox
+                                placeholder="企業を選択（名前で絞り込めます）"
+                                options={companyList.map((c) => ({
+                                    value: c.companyId,
+                                    label: c.nameOfficial,
+                                }))}
+                                value={values.companyId}
+                                onChange={changeCompany}
+                                disabled={isEdit}
                             />
                         </Tooltip>
+                    </FormField>
+                    {isEdit ? (
+                        <p className="record-form__hint">
+                            企業と応募回は保存後に変更できません。誤っている場合は、この記録を削除して登録し直してください。
+                        </p>
                     ) : (
-                        <p className="record-form__empty">
-                            {!roundsKey
-                                ? '企業を選択すると、応募回が表示されます。'
-                                : roundsLoading
-                                  ? ''
-                                  : 'この企業の応募回はまだありません。'}
+                        <p className="record-form__hint">
+                            企業が見つからない場合は、
+                            <button
+                                type="button"
+                                className="record-form__link"
+                                onClick={() => companyForm.open()}
+                            >
+                                企業を登録
+                            </button>
+                            してください。
                         </p>
                     )}
-                </FormField>
-                {roundsLoading && <Loading />}
-                {roundsError && (
-                    <ErrorMessage
-                        error={roundsError}
-                        onRetry={() => setReloadCount((n) => n + 1)}
-                    />
-                )}
-                {!isEdit && (
-                    <p className="record-form__hint">
-                        この企業の応募回がない場合は、
-                        <button
-                            type="button"
-                            className="record-form__link"
-                            disabled={!roundsKey}
-                            onClick={() => openOther(PATHS.roundNew)}
-                        >
-                            応募回を登録
-                        </button>
-                        してください。登録後、この画面に戻ります。
-                        {selectedRound && `（選考段階：${STAGE_LABELS[selectedRound.stage]}）`}
-                    </p>
-                )}
 
-                <FormField
-                    label="実施日"
-                    error={fieldErrors.conductedOn}
-                    hint="下書きでは未入力でも保存できます。直接入力するか、カレンダーから選べます。"
-                >
-                    <DatePicker
-                        value={values.conductedOn}
-                        onChange={(value) => set('conductedOn', value)}
-                    />
-                </FormField>
-
-                <FormField
-                    group
-                    label="活動種別"
-                    required
-                    hint="複数選択できます。"
-                    error={fieldErrors.activityTypes}
-                >
-                    <div className="record-form__types">
-                        {ACTIVITY_TYPE_ORDER.map((type) => (
-                            <Checkbox
-                                key={type}
-                                label={ACTIVITY_TYPE_LABELS[type]}
-                                checked={values.activityTypes.includes(type)}
-                                onChange={(event) => toggleType(type, event.target.checked)}
-                            />
-                        ))}
-                    </div>
-                </FormField>
-
-                {sections.map((section) => (
-                    <section key={section.type} className="record-form__section">
-                        <h2>{section.label}</h2>
-                        {section.type === 'interview' ? (
-                            <InterviewSection
-                                value={values.sections.interview}
-                                onChange={(next) => setSection('interview', next)}
-                                needCategory={needCategory}
-                                errors={sectionErrorTexts(fieldErrors, 'interview')}
-                            />
+                    <FormField
+                        group
+                        label="応募回"
+                        required
+                        hint="応募回は、保存の前に登録しておく必要があります。"
+                        error={fieldErrors.applicationRoundId}
+                    >
+                        {roundOptions.length > 0 ? (
+                            <Tooltip content={lockedTip} focusable className="record-form__locked">
+                                <RadioGroup
+                                    variant="card"
+                                    options={roundOptions}
+                                    value={selectedRoundId}
+                                    onChange={(value) => set('applicationRoundId', value)}
+                                    disabled={isEdit || roundsLoading}
+                                />
+                            </Tooltip>
                         ) : (
-                            <SimpleSection
-                                section={section}
-                                value={values.sections[section.type]}
-                                onChange={(next) => setSection(section.type, next)}
-                                errors={sectionErrorTexts(fieldErrors, section.type)}
-                            />
+                            <p className="record-form__empty">
+                                {!roundsKey
+                                    ? '企業を選択すると、応募回が表示されます。'
+                                    : roundsLoading
+                                      ? ''
+                                      : 'この企業の応募回はまだありません。'}
+                            </p>
                         )}
-                    </section>
-                ))}
-            </fieldset>
+                    </FormField>
+                    {roundsLoading && <Loading />}
+                    {roundsError && (
+                        <ErrorMessage
+                            error={roundsError}
+                            onRetry={() => setReloadCount((n) => n + 1)}
+                        />
+                    )}
+                    {!isEdit && (
+                        <p className="record-form__hint">
+                            この企業の応募回がない場合は、
+                            <button
+                                type="button"
+                                className="record-form__link"
+                                disabled={!roundsKey}
+                                onClick={() => openOther(PATHS.roundNew)}
+                            >
+                                応募回を登録
+                            </button>
+                            してください。登録後、この画面に戻ります。
+                            {selectedRound && `（選考段階：${STAGE_LABELS[selectedRound.stage]}）`}
+                        </p>
+                    )}
 
-            <div className="record-form__actions">
-                <Button
-                    variant="secondary"
-                    disabled={submitting}
-                    onClick={() => (isDirty ? setConfirmLeaveOpen(true) : leave())}
-                >
-                    キャンセル
-                </Button>
-                {!isCompletedRecord && (
+                    <FormField
+                        label="実施日"
+                        error={fieldErrors.conductedOn}
+                        hint="下書きでは未入力でも保存できます。直接入力するか、カレンダーから選べます。"
+                    >
+                        <DatePicker
+                            value={values.conductedOn}
+                            onChange={(value) => set('conductedOn', value)}
+                        />
+                    </FormField>
+
+                    <FormField
+                        group
+                        label="活動種別"
+                        required
+                        hint="複数選択できます。"
+                        error={fieldErrors.activityTypes}
+                    >
+                        <div className="record-form__types">
+                            {ACTIVITY_TYPE_ORDER.map((type) => (
+                                <Checkbox
+                                    key={type}
+                                    label={ACTIVITY_TYPE_LABELS[type]}
+                                    checked={values.activityTypes.includes(type)}
+                                    onChange={(event) => toggleType(type, event.target.checked)}
+                                />
+                            ))}
+                        </div>
+                    </FormField>
+
+                    {sections.map((section) => (
+                        <RecordSection
+                            key={section.type}
+                            section={section}
+                            value={values.sections[section.type]}
+                            onChange={(next) => setSection(section.type, next)}
+                            needCategory={needCategory}
+                            errors={sectionErrorTexts(fieldErrors, section.type)}
+                            errorsVersion={fieldErrors}
+                        />
+                    ))}
+                </fieldset>
+
+                <p className="record-form__hint">
+                    <Link to={PATHS.rounds}>応募企業・選考進捗</Link>
+                </p>
+
+                <div className="record-form__actions">
                     <Button
                         variant="secondary"
-                        loading={submitting && pendingMode === SAVE_MODES.DRAFT}
-                        disabled={submitting || roundsLoading || retry.secondsLeft > 0}
-                        onClick={() => requestSave(SAVE_MODES.DRAFT)}
+                        disabled={submitting}
+                        onClick={() => (isDirty ? setConfirmLeaveOpen(true) : leave())}
                     >
-                        下書き保存
+                        キャンセル
                     </Button>
-                )}
-                <Button
-                    loading={submitting && pendingMode === SAVE_MODES.COMPLETE}
-                    disabled={submitting || roundsLoading || retry.secondsLeft > 0}
-                    onClick={() => requestSave(SAVE_MODES.COMPLETE)}
-                >
-                    {isCompletedRecord ? '保存' : '記入完了'}
-                </Button>
-            </div>
-            <p className="record-form__hint">
-                <Link to={PATHS.rounds}>応募企業・選考進捗</Link>
-            </p>
+                    {!isCompletedRecord && (
+                        <Button
+                            variant="secondary"
+                            loading={submitting && pendingMode === SAVE_MODES.DRAFT}
+                            disabled={submitting || roundsLoading || retry.secondsLeft > 0}
+                            onClick={() => requestSave(SAVE_MODES.DRAFT)}
+                        >
+                            下書き保存
+                        </Button>
+                    )}
+                    <Button
+                        loading={submitting && pendingMode === SAVE_MODES.COMPLETE}
+                        disabled={submitting || roundsLoading || retry.secondsLeft > 0}
+                        onClick={() => requestSave(SAVE_MODES.COMPLETE)}
+                    >
+                        {isCompletedRecord ? '保存' : '記入完了'}
+                    </Button>
+                </div>
 
-            <ConfirmDialog
-                open={confirmCompleteOpen}
-                title="記入完了の確認"
-                message={getMessage('C-001')}
-                confirmLabel="記入完了にする"
-                loading={submitting}
-                onConfirm={() => requestSave(SAVE_MODES.COMPLETE, true)}
-                onCancel={() => setConfirmCompleteOpen(false)}
-            />
-            <ConfirmDialog
-                open={confirmLeaveOpen}
-                title="入力内容の破棄"
-                message={getMessage('C-003')}
-                confirmLabel="破棄して戻る"
-                variant="danger"
-                onConfirm={leave}
-                onCancel={() => setConfirmLeaveOpen(false)}
-            />
-        </form>
+                <ConfirmDialog
+                    open={confirmCompleteOpen}
+                    title="記入完了の確認"
+                    message={getMessage('C-001')}
+                    confirmLabel="記入完了にする"
+                    loading={submitting}
+                    onConfirm={() => requestSave(SAVE_MODES.COMPLETE, true)}
+                    onCancel={() => setConfirmCompleteOpen(false)}
+                />
+                <ConfirmDialog
+                    open={confirmLeaveOpen}
+                    title="入力内容の破棄"
+                    message={getMessage('C-003')}
+                    confirmLabel="破棄して戻る"
+                    variant="danger"
+                    onConfirm={leave}
+                    onCancel={() => setConfirmLeaveOpen(false)}
+                />
+            </form>
+            <CompanyFormDialog overlay={companyForm} />
+        </>
     );
 }
 

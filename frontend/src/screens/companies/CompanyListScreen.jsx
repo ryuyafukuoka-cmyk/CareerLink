@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, generatePath, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, generatePath, useLocation, useSearchParams } from 'react-router-dom';
 import { getRegionName } from '@shared/definitions';
 import { listCompanies } from '@/api/companies.js';
 import Button from '@/components/Button/Button.jsx';
@@ -12,7 +12,9 @@ import Pagination from '@/components/Pagination/Pagination.jsx';
 import RegionSelect from '@/components/RegionSelect/RegionSelect.jsx';
 import TextInput from '@/components/TextInput/TextInput.jsx';
 import { getMessage } from '@/messages';
+import { useOverlay, useOverlayResult } from '@/hooks/useOverlay.js';
 import { PATHS } from '@/routes/paths.js';
+import CompanyFormDialog from './CompanyFormDialog.jsx';
 import './CompanyListScreen.css';
 
 const splitRegions = (text) => (text ? text.split(',').filter(Boolean) : []);
@@ -21,7 +23,6 @@ const isHttpUrl = (url) => /^https?:\/\//i.test(url);
 // SC-04-01 Company list. Search by name (keyword) and regions (OR inside, AND with the keyword).
 // The searched conditions and the page live in the URL, so coming back from a company keeps them.
 function CompanyListScreen() {
-    const navigate = useNavigate();
     const { state } = useLocation();
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -50,10 +51,19 @@ function CompanyListScreen() {
         };
     }, [keyword, regionsText, page, requestKey]);
 
+    // SC-04-03 (create) opens over this list.
+    const createForm = useOverlay('companyCreate');
+    const [created, setCreated] = useState(false);
+    useOverlayResult('companyCreate', () => {
+        setCreated(true);
+        setReloadCount((n) => n + 1);
+    });
+
     function search(nextKeyword, nextRegions) {
         const params = {};
         if (nextKeyword.trim()) params.keyword = nextKeyword.trim();
         if (nextRegions.length > 0) params.prefectures = nextRegions.join(',');
+        setCreated(false);
         setSearchParams(params); // page is dropped, so it goes back to 1
     }
 
@@ -80,10 +90,12 @@ function CompanyListScreen() {
         <main className="company-list">
             <div className="company-list__header">
                 <h1>企業一覧</h1>
-                <Button onClick={() => navigate(PATHS.companyNew)}>企業を登録する</Button>
+                <Button onClick={() => createForm.open()}>企業を登録する</Button>
             </div>
 
-            {state?.noticeId && <Notice message={getMessage(state.noticeId)} />}
+            {(created || state?.noticeId) && (
+                <Notice message={getMessage(created ? 'S-101' : state.noticeId)} />
+            )}
 
             <form className="company-list__search" onSubmit={handleSubmit}>
                 <FormField label="企業名" hint="正式名称・カタカナの一部で検索できます。">
@@ -113,7 +125,7 @@ function CompanyListScreen() {
             {error && <ErrorMessage error={error} onRetry={() => setReloadCount((n) => n + 1)} />}
             {data && data.items.length === 0 && (
                 <EmptyState message={getMessage('N-004')}>
-                    <Button variant="secondary" onClick={() => navigate(PATHS.companyNew)}>
+                    <Button variant="secondary" onClick={() => createForm.open()}>
                         企業を登録する
                     </Button>
                 </EmptyState>
@@ -171,6 +183,8 @@ function CompanyListScreen() {
                     />
                 </>
             )}
+
+            <CompanyFormDialog overlay={createForm} />
         </main>
     );
 }
