@@ -63,6 +63,29 @@
     outline-offset: -2px;
 }
 
+.branched-menu__head-main {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+}
+
+.branched-menu__head-icon {
+    flex: none;
+}
+
+.branched-menu__head-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* A group head whose branch holds the current page. */
+.branched-menu__head[data-has-active] {
+    color: var(--color-primary);
+}
+
 .branched-menu__chevron {
     flex: none;
     color: var(--color-text-muted);

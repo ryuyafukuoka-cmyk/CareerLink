@@ -27,23 +27,30 @@
     text-decoration: none;
 }
 
-.app-layout__user {
+/* Title with the breadcrumb beside it. */
+.app-layout__brand {
     display: flex;
+    flex: 1;
     align-items: center;
-    gap: var(--space-3);
-    font-size: var(--font-size-sm);
+    gap: var(--space-4);
+    min-width: 0;
+    margin-right: var(--space-4);
 }
 
-.app-layout__user-name {
-    font-weight: var(--font-weight-medium);
+.app-layout__title {
+    flex: none;
 }
 
-.app-layout__role {
-    padding: 0 var(--space-2);
-    font-size: var(--font-size-xs);
-    color: var(--color-primary);
-    background: var(--color-primary-soft);
-    border-radius: var(--radius-sm);
+.app-layout__breadcrumb {
+    min-width: 0;
+    padding-left: var(--space-4);
+    overflow: hidden;
+    border-left: var(--border-width) solid var(--color-border);
+}
+
+.app-layout__breadcrumb .breadcrumb__list {
+    flex-wrap: nowrap;
+    white-space: nowrap;
 }
 
 .app-layout__body {
@@ -51,19 +58,10 @@
     flex: 1;
 }
 
-.app-layout__sidebar {
-    flex: 0 0 var(--sidebar-width);
-    padding: var(--space-4) var(--space-3);
-    background: var(--color-surface);
-    border-right: var(--border-width) solid var(--color-border);
-}
-
 .app-layout__main {
     flex: 1;
     min-width: 0;
-    padding: var(--space-4);
-}
-
-.app-layout__breadcrumb {
-    margin-bottom: var(--space-4);
+    /* Clear the collapsed side rail (it floats over the page when open). */
+    padding: var(--space-4) var(--space-4) var(--space-4)
+        calc(var(--rail-width) + var(--rail-gap) + var(--space-4));
 }

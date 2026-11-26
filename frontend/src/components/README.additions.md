@@ -53,3 +53,9 @@ Popups (`Combobox` list, `DatePicker`, `DropdownMenu`, `HoverCard`) grow downwar
 | `TextLink`     | `to`, `children`                | In-app (react-router) link. Same animated underline. Left click navigates in the same tab. Right click shows the same custom menu (full URL, 新しいタブで開く, リンクをコピー).                                                |
 
 Right-click menu: `components/LinkMenu/useLinkMenu.jsx` (shared by both). Look: `styles/textLink.css` (`.text-link`). The underline draws in from the left and the color deepens on hover / focus.
+
+## SideRail
+
+- `SideRail`: `items` (same tree as `BranchedMenu`, top-level nodes may carry `icon`), `label`. Floating drawer used by `AppLayout`. Starts open. Each top-level branch (ホーム, 活動記録, …) shows its own icon, also when open. After a press outside (or Esc) it retracts to the head icons only; mouse near it or keyboard focus opens it again, and any click inside locks it open until the next press outside. Needs a Router.
+
+- `UserMenu`: `displayName`, `role`, `onLogout`. Header account menu: ライト / ダーク / PCの設定に合わせる (default, ticked row = current) and ログアウト. `DropdownMenu` items accept `checked` for tick rows.

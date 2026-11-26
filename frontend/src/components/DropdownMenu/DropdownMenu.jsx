@@ -1,4 +1,5 @@
 import { useCallback, useId, useRef, useState } from 'react';
+import { Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useClickOutside } from '@/hooks/useClickOutside.js';
 import { usePresence } from '@/hooks/usePresence.js';
@@ -6,11 +7,12 @@ import { classNames } from '@/utils/classNames.js';
 import '@/styles/popover.css';
 import './DropdownMenu.css';
 
-const ITEM_SELECTOR = '[role="menuitem"]:not(:disabled)';
+const ITEM_SELECTOR = '[role="menuitem"]:not(:disabled), [role="menuitemradio"]:not(:disabled)';
 
 // Button that opens a menu of actions.
 // children: the trigger content (text / icon). triggerLabel: accessible name for an icon-only trigger.
-// items: [{ label, onSelect?, to?, icon?, danger?, disabled?, separator? }]
+// items: [{ label, onSelect?, to?, icon?, danger?, disabled?, separator?, checked? }]
+//   `checked` (true / false) makes the row a radio-style choice with a tick when true.
 //   icon is a component (for example a lucide icon). `to` renders a router link.
 // align: 'start' | 'end' (which edge of the trigger the menu lines up with).
 function DropdownMenu({ items, align = 'start', triggerLabel, children, className }) {
@@ -130,6 +132,13 @@ function DropdownMenu({ items, align = 'start', triggerLabel, children, classNam
                             <>
                                 {Icon && <Icon size={16} aria-hidden="true" />}
                                 <span>{item.label}</span>
+                                {item.checked && (
+                                    <Check
+                                        className="dropdown-menu__check"
+                                        size={16}
+                                        aria-hidden="true"
+                                    />
+                                )}
                             </>
                         );
                         const itemClass = classNames(
@@ -156,7 +165,12 @@ function DropdownMenu({ items, align = 'start', triggerLabel, children, classNam
                                 ) : (
                                     <button
                                         type="button"
-                                        role="menuitem"
+                                        role={
+                                            item.checked === undefined
+                                                ? 'menuitem'
+                                                : 'menuitemradio'
+                                        }
+                                        aria-checked={item.checked}
                                         tabIndex={-1}
                                         disabled={item.disabled}
                                         className={itemClass}

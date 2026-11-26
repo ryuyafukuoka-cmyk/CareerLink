@@ -1,6 +1,7 @@
 import {
     ClipboardList,
     FileText,
+    Home,
     List,
     Plus,
     ScrollText,
@@ -21,9 +22,10 @@ const WRITERS = [STUDENT, ADMIN]; // instructors are read-only for records and r
 // Sidebar menu as a tree. A node with `children` is a group (opens and closes); a node with
 // `path` is a link. `getVisibleMenus` in menus.js stays flat and is used by the home cards.
 const MENU_TREE = [
-    { id: 'home', label: 'ホーム', path: PATHS.home, roles: ALL_ROLES },
+    { id: 'home', label: 'ホーム', path: PATHS.home, icon: Home, roles: ALL_ROLES },
     {
         id: 'records',
+        icon: FileText,
         label: '活動記録',
         children: [
             {
@@ -44,6 +46,7 @@ const MENU_TREE = [
     },
     {
         id: 'rounds',
+        icon: ClipboardList,
         label: '応募企業・選考進捗',
         children: [
             {
@@ -64,6 +67,7 @@ const MENU_TREE = [
     },
     {
         id: 'lookup',
+        icon: Search,
         label: '過去情報・企業',
         children: [
             {
@@ -91,6 +95,7 @@ const MENU_TREE = [
     },
     {
         id: 'admin',
+        icon: Settings,
         label: '管理',
         children: [
             {
@@ -140,7 +145,9 @@ export function getMenuTree(role) {
             const children = node.children
                 .filter((child) => child.roles.includes(role))
                 .map(toLeaf);
-            if (children.length > 0) items.push({ id: node.id, label: node.label, children });
+            if (children.length > 0) {
+                items.push({ id: node.id, label: node.label, icon: node.icon, children });
+            }
         } else if (node.roles.includes(role)) {
             items.push(toLeaf(node));
         }

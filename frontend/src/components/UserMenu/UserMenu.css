@@ -1,0 +1,15 @@
+.user-menu .dropdown-menu__trigger {
+    font-size: var(--font-size-sm);
+}
+
+.user-menu__name {
+    font-weight: var(--font-weight-medium);
+}
+
+.user-menu__role {
+    padding: 0 var(--space-2);
+    font-size: var(--font-size-xs);
+    color: var(--color-primary);
+    background: var(--color-primary-soft);
+    border-radius: var(--radius-sm);
+}

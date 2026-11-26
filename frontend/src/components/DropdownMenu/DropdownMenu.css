@@ -84,3 +84,9 @@
     margin: var(--space-1) 0;
     background: var(--color-border);
 }
+
+.dropdown-menu__check {
+    flex: none;
+    margin-left: auto;
+    color: var(--color-primary);
+}

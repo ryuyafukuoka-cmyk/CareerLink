@@ -6,8 +6,9 @@ import './BranchedMenu.css';
 // Vertical menu whose groups open to a branch of links, with the active branch drawn as a line.
 // Adapted from React Bits "Branched Menu": uses router links, lucide icons, and the app's tokens.
 //
-// items: [{ value, label, to }                                  a top-level link
-//         { id, label, children: [{ value, label, to, icon? }] } a group]
+// items: [{ value, label, to, icon? }                                  a top-level link
+//         { id, label, icon?, children: [{ value, label, to, icon? }] } a group]
+// A top-level `icon` is drawn in the head, before the label.
 // The active link comes from the current URL (the longest matching `to`).
 // A group opens by default when it contains the active link; clicking its head toggles it.
 const PAD = 6; // space above and below a group's rows (px)
@@ -33,6 +34,22 @@ function findActive(items, pathname) {
     return best;
 }
 
+function HeadLabel({ icon: Icon, children }) {
+    return (
+        <span className="branched-menu__head-main">
+            {Icon && (
+                <Icon
+                    className="branched-menu__head-icon"
+                    size={20}
+                    strokeWidth={1.8}
+                    aria-hidden="true"
+                />
+            )}
+            <span className="branched-menu__head-label">{children}</span>
+        </span>
+    );
+}
+
 function BranchedMenu({
     items,
     rowHeight = 36,
@@ -42,6 +59,7 @@ function BranchedMenu({
     lineWidth = 1.5,
     drawDuration = 400,
     foldDuration = 300,
+    collapsed = false,
 }) {
     const { pathname } = useLocation();
     const [overrides, setOverrides] = useState({}); // group id -> true / false once the user toggles it
@@ -52,13 +70,21 @@ function BranchedMenu({
     const active = findActive(items, pathname);
     const activeGroup = active.section >= 0 ? items[active.section] : null;
     const isOpen = (item, index) => overrides[item.id] ?? index === active.section;
-    const markerShown = Boolean(activeGroup) && isOpen(activeGroup, active.section);
+    // Top-level link that is the current page (e.g. home); it has no group.
+    const activeLink =
+        active.section < 0 ? items.find((item) => item.value === active.value) : null;
+    const markedHead = activeGroup ? activeGroup.id : (activeLink?.value ?? null);
+    // Open menu: bar only beside an open group. Collapsed (heads only): always beside the current branch.
+    const markerShown =
+        collapsed && Boolean(markedHead)
+            ? true
+            : Boolean(activeGroup) && isOpen(activeGroup, active.section);
 
     // Slide the marker beside the head of the group that holds the active link.
     useLayoutEffect(() => {
         const place = (glide) => {
             const marker = markerRef.current;
-            const head = activeGroup ? heads.current[activeGroup.id] : null;
+            const head = markedHead ? heads.current[markedHead] : null;
             if (!marker) return;
             const on = markerShown && head;
             if (!glide) marker.style.transition = 'none';
@@ -81,7 +107,7 @@ function BranchedMenu({
         });
         if (rootRef.current) observer.observe(rootRef.current);
         return () => observer.disconnect();
-    }, [activeGroup, markerShown, rowHeight]);
+    }, [markedHead, markerShown, rowHeight]);
 
     function toggle(item, index) {
         setOverrides((prev) => ({
@@ -122,12 +148,16 @@ function BranchedMenu({
                     return (
                         <div key={item.value} className="branched-menu__section">
                             <Link
+                                ref={(node) => {
+                                    heads.current[item.value] = node;
+                                }}
                                 to={item.to}
                                 className="branched-menu__head"
                                 aria-current={current ? 'page' : undefined}
                                 data-active={current ? '' : undefined}
+                                title={item.label}
                             >
-                                {item.label}
+                                <HeadLabel icon={item.icon}>{item.label}</HeadLabel>
                             </Link>
                         </div>
                     );
@@ -147,9 +177,11 @@ function BranchedMenu({
                             type="button"
                             className="branched-menu__head"
                             aria-expanded={open}
+                            data-has-active={index === active.section ? '' : undefined}
+                            title={item.label}
                             onClick={() => toggle(item, index)}
                         >
-                            <span>{item.label}</span>
+                            <HeadLabel icon={item.icon}>{item.label}</HeadLabel>
                             <ChevronDown
                                 className="branched-menu__chevron"
                                 size={16}
