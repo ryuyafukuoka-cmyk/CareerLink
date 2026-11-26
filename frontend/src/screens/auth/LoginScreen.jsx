@@ -1,11 +1,14 @@
 import { useState } from 'react';
+import { LogIn } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import { USE_MOCK_AUTH } from '@/auth/mockAuth.js';
 import { useAuth } from '@/auth/useAuth.js';
+import BorderGlow from '@/components/BorderGlow/BorderGlow.jsx';
 import Button from '@/components/Button/Button.jsx';
 import DotField from '@/components/DotField/DotField.jsx';
 import ErrorMessage from '@/components/ErrorMessage/ErrorMessage.jsx';
 import Loading from '@/components/Loading/Loading.jsx';
+import ThemeToggle from '@/components/ThemeToggle/ThemeToggle.jsx';
 import { getMessage } from '@/messages';
 import { PATHS } from '@/routes/paths.js';
 import './LoginScreen.css';
@@ -42,14 +45,25 @@ function LoginScreen() {
     return (
         <main className="login-screen">
             <DotField />
-            <section className="login-screen__card">
-                <h1 className="login-screen__title">CareerLink</h1>
-                <p className="login-screen__lead">ICTエンジニア科 就職活動記録システム</p>
-                <p className="login-screen__note">学校のアカウントでログインします。</p>
+            <ThemeToggle className="login-screen__theme" />
+            <section className="login-screen__card" aria-labelledby="login-title">
+                <p className="login-screen__eyebrow">ICTエンジニア科 就職活動記録システム</p>
+                <h1 id="login-title" className="login-screen__title">
+                    CareerLink
+                </h1>
+                <p className="login-screen__lead">
+                    先輩たちの経験を探して、自分の就職活動を記録しよう。
+                </p>
                 {error && <ErrorMessage message={error} />}
-                <Button className="login-screen__button" onClick={handleLogin} loading={busy}>
-                    学校アカウントでログイン
-                </Button>
+                <BorderGlow className="login-screen__glow" active={!busy}>
+                    <Button className="login-screen__button" onClick={handleLogin} loading={busy}>
+                        <LogIn size={18} aria-hidden="true" />
+                        学校アカウントでログイン
+                    </Button>
+                </BorderGlow>
+                <p className="login-screen__note">
+                    IDとパスワードは学校の認証画面で入力します。CareerLinkには保存されません。
+                </p>
                 {USE_MOCK_AUTH && (
                     <p className="login-screen__dev">
                         開発モード：画面右下の「開発用ログイン切替」でユーザを選んでください。

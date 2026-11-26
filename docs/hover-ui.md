@@ -28,22 +28,43 @@ Component props are in `components/README.md` (section "Hover UIs (overlays) and
 
 Every input form becomes a hover UI (an overlay over its parent page). A hover UI has no route of its own and can only be opened from its parent page.
 
-| Form (screen ID)                  | Parent page                                                                                 | Overlay            |
-| --------------------------------- | ------------------------------------------------------------------------------------------- | ------------------ |
-| Company create (SC-04-03)         | Company list (SC-04-01)                                                                     | Dialog             |
-| Company edit (SC-04-03)           | Company detail (SC-04-02)                                                                   | Dialog             |
-| Round create (SC-02-06)           | Rounds list (SC-02-04)                                                                      | Dialog             |
-| Progress edit (SC-02-07)          | Round detail (SC-02-05)                                                                     | Dialog             |
-| Graduation year change (SC-06-05) | User detail (SC-06-02)                                                                      | Dialog             |
-| Role change (SC-06-06)            | User detail (SC-06-02)                                                                      | Dialog             |
-| Record create / edit (SC-02-03)   | Record list (SC-02-01) or detail (SC-02-02); also "add record" from round detail (SC-02-05) | Drawer (size `lg`) |
+| Form (screen ID)                  | Parent page                                                                                 | Overlay                  |
+| --------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------ |
+| Company create (SC-04-03)         | Company list (SC-04-01)                                                                     | Dialog                   |
+| Company edit (SC-04-03)           | Company detail (SC-04-02)                                                                   | Dialog                   |
+| Round create (SC-02-06)           | Rounds list (SC-02-04)                                                                      | Dialog                   |
+| Progress edit (SC-02-07)          | Round detail (SC-02-05)                                                                     | Dialog                   |
+| Graduation year change (SC-06-05) | User detail (SC-06-02)                                                                      | Dialog                   |
+| Role change (SC-06-06)            | User detail (SC-06-02)                                                                      | Dialog                   |
+| Record create / edit (SC-02-03)   | Record list (SC-02-01) or detail (SC-02-02); also "add record" from round detail (SC-02-05) | Drawer (size `lg`), last |
 
 Stays a full page:
 
 - First graduation year (SC-00-03) and login (SC-00-01): mandatory, blocks the app, no parent page.
 - Search conditions (SC-03-01): results are a separate page. A filter panel on the results page is a different change; leave it.
 
-Open decision: the record form as a drawer is the riskiest (several sections, question list, stacked overlays) and the freeze is close. Plan: migrate the small forms first, judge the drawer on them, then do the record form.
+## Dialog or Drawer? (owner rule, 2026-11-26)
+
+Decide by how much content there is:
+
+- **Dialog**: small content that fits without scrolling (about 6 fields or fewer, short text). Size `sm` / `md`.
+- **Drawer**: content long enough that the person has to scroll to reach the bottom (many fields, repeating lists, long read-only text). Size `lg`. The action buttons stay in the footer so they are always visible.
+
+Check when a new overlay is added: count the fields and long text areas. If it clearly needs scrolling on a school PC screen, use a Drawer. If it fits, use a Dialog. A Dialog body still scrolls inside its max height as a safety net, so a borderline case never breaks; it just should have been a Drawer.
+
+## Decisions (owner, 2026-11-26)
+
+1. **Record form = Drawer (size `lg`), built last.** The small dialogs come first and prove the pattern. The `/records/new` and `/records/:recordId/edit` pages stay as they are (already redesigned) until the drawer replaces them. Reuse: the form body becomes `RecordForm.jsx`; the sticky action bar becomes the drawer footer; `returnTo` and form-state preservation are deleted; "register company" and "register round" open as stacked Dialogs.
+2. **Read-only peeks are added** (both are new, not forms). By the rule above the record quick view is a Drawer (long) and the log detail is a Dialog (about 7 short fields):
+
+| Peek                 | Parent page(s)                                                                  | Overlay | Content                                                                                       |
+| -------------------- | ------------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------- |
+| Record quick view    | Record list (SC-02-01), search results (SC-03-02), company karte, round records | Drawer  | Same sections as the record detail (SC-02-02) plus a link "詳細ページを開く" to the full page |
+| Operation log detail | Operation log list (SC-06-04), API L-02                                         | Dialog  | One log entry (operator, time, type, target, result). Staff only                              |
+
+Peek rules: the full detail page (SC-02-02 / SC-03-03) stays and keeps its URL, because links and the breadcrumb still point to it. The peek only calls the same API (S-02, L-02), so permissions (drafts, hidden names) are enforced by the server as before. Open from a row action or a click on the row.
+
+Stays a full page: login, first graduation year, search conditions, record detail, company detail (karte), all list pages.
 
 ## Rules
 
@@ -88,9 +109,10 @@ Record form to "register round" / "register company" no longer navigates away. O
 1. Company: create (list) and edit (detail) dialogs. Smallest, proves the pattern. Add `usePageTitle` to more screens while there if useful.
 2. Round create (rounds list) and progress edit (round detail). Keep rules: stage `considering` allows empty application date, others require it; E-215, E-216; admin picks the target student.
 3. Admin: graduation year and role dialogs on user detail (role: block self-change, warn on last admin, C-203).
-4. Record form drawer (last): section show/hide by activity type tags, interview question list, `validateActivityRecord(input, mode)`, save draft (S-002) / complete with C-001 (S-003), existing draft locks company and round, instructor edits content only, stacked round/company dialogs.
-5. Update `routes/screenRoutes.js`, `routes/breadcrumbs.js`, `auth/menuTree.js`, `README`, and `mySchedule.md`. Check that `HomeScreen` cards (from `menus.js`) still point to real pages.
-6. Hover previews (HoverCard) on company names, stage badges, truncated labels: later, after the forms, and only with data already on the page.
+4. Record form drawer (last, decided 11/26): section show/hide by activity type tags, interview question list, `validateActivityRecord(input, mode)`, save draft (S-002) / complete with C-001 (S-003), existing draft locks company and round, instructor edits content only, stacked round/company dialogs.
+5. Peeks (record quick view drawer, log detail dialog), after the record form drawer.
+6. Update `routes/screenRoutes.js`, `routes/breadcrumbs.js`, `auth/menuTree.js`, `README`, and `mySchedule.md`. Check that `HomeScreen` cards (from `menus.js`) still point to real pages.
+7. Hover previews (HoverCard) on company names, stage badges, truncated labels: later, after the forms, and only with data already on the page.
 
 ## Acceptance checks (the owner tests, not the assistant)
 

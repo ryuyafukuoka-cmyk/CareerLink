@@ -22,18 +22,21 @@ import { listUsers } from '@/api/users.js';
 import { useAuth } from '@/auth/useAuth.js';
 import Button from '@/components/Button/Button.jsx';
 import Checkbox from '@/components/Checkbox/Checkbox.jsx';
+import Combobox from '@/components/Combobox/Combobox.jsx';
 import ConfirmDialog from '@/components/ConfirmDialog/ConfirmDialog.jsx';
+import DatePicker from '@/components/DatePicker/DatePicker.jsx';
 import ErrorMessage from '@/components/ErrorMessage/ErrorMessage.jsx';
 import FormField from '@/components/FormField/FormField.jsx';
 import Loading from '@/components/Loading/Loading.jsx';
 import Notice from '@/components/Notice/Notice.jsx';
-import Select from '@/components/Select/Select.jsx';
-import TextInput from '@/components/TextInput/TextInput.jsx';
+import Progress from '@/components/Progress/Progress.jsx';
+import RadioGroup from '@/components/RadioGroup/RadioGroup.jsx';
+import Tooltip from '@/components/Tooltip/Tooltip.jsx';
 import { useRetryAfter } from '@/hooks/useRetryAfter.js';
 import { useSubmitLock } from '@/hooks/useSubmitLock.js';
 import { getErrorMessage, getMessage } from '@/messages/index.js';
 import { PATHS } from '@/routes/paths.js';
-import { studentOptions } from '@/screens/rounds/roundHelpers.js';
+import { numberRounds, studentOptions } from '@/screens/rounds/roundHelpers.js';
 import {
     ACTIVITY_RECORD_BODY_TOO_LARGE_MESSAGE,
     isRecordBodyTooLarge,
@@ -163,11 +166,11 @@ function RecordForm({ companies, students, record }) {
             ? values.applicationRoundId
             : latestRoundId(rounds);
 
-    function changeStudent(event) {
-        setValues((c) => ({ ...c, studentUserId: event.target.value, applicationRoundId: '' }));
+    function changeStudent(value) {
+        setValues((c) => ({ ...c, studentUserId: value, applicationRoundId: '' }));
     }
-    function changeCompany(event) {
-        setValues((c) => ({ ...c, companyId: event.target.value, applicationRoundId: '' }));
+    function changeCompany(value) {
+        setValues((c) => ({ ...c, companyId: value, applicationRoundId: '' }));
     }
     function toggleType(type, checked) {
         const next = checked
@@ -209,6 +212,22 @@ function RecordForm({ companies, students, record }) {
     const selectedRound = rounds.find((r) => r.applicationRoundId === selectedRoundId);
     const roundStage = selectedRound?.stage;
     const needCategory = Boolean(roundStage && roundStage !== 'considering');
+    const roundNumbers = numberRounds(rounds);
+    const roundOptions = rounds.map((r) => ({
+        value: r.applicationRoundId,
+        label: `${roundNumbers.get(r.applicationRoundId)}回目の応募`,
+        description: `${STAGE_LABELS[r.stage]}${
+            r.applicationDate ? `・応募日 ${r.applicationDate}` : ''
+        }（ID ${r.applicationRoundId}）`,
+    }));
+    // Basic items done (shown as the progress bar at the top of the form).
+    const basicsDone = [
+        values.companyId,
+        selectedRoundId,
+        values.activityTypes.length > 0,
+        values.conductedOn.trim(),
+    ].filter(Boolean).length;
+    const lockedTip = isEdit ? '保存後は変更できません' : '';
 
     function showFieldErrors(errors, mode) {
         setFieldErrors(getFieldErrorTexts(errors, values.activityTypes));
@@ -308,6 +327,14 @@ function RecordForm({ companies, students, record }) {
 
     return (
         <form className="record-form__card" onSubmit={(event) => event.preventDefault()} noValidate>
+            <Progress
+                className="record-form__progress"
+                segments={4}
+                value={basicsDone}
+                label="基本情報の入力"
+                showValue
+                tone={basicsDone === 4 ? 'success' : 'primary'}
+            />
             {retry.secondsLeft > 0 && (
                 <ErrorMessage message={getMessage('E-009', { seconds: retry.secondsLeft })} />
             )}
@@ -322,8 +349,8 @@ function RecordForm({ companies, students, record }) {
             <fieldset className="record-form__fieldset" disabled={submitting}>
                 {isAdmin && !isEdit && (
                     <FormField label="対象学生" required error={fieldErrors.ownerUserId}>
-                        <Select
-                            placeholder="学生を選択"
+                        <Combobox
+                            placeholder="学生を選択（名前で絞り込めます）"
                             options={studentOptions(students)}
                             value={values.studentUserId}
                             onChange={changeStudent}
@@ -332,16 +359,18 @@ function RecordForm({ companies, students, record }) {
                 )}
 
                 <FormField label="企業" required error={fieldErrors.companyId}>
-                    <Select
-                        placeholder="企業を選択"
-                        options={companies.map((c) => ({
-                            value: c.companyId,
-                            label: c.nameOfficial,
-                        }))}
-                        value={values.companyId}
-                        onChange={changeCompany}
-                        disabled={isEdit}
-                    />
+                    <Tooltip content={lockedTip} focusable className="record-form__locked">
+                        <Combobox
+                            placeholder="企業を選択（名前で絞り込めます）"
+                            options={companies.map((c) => ({
+                                value: c.companyId,
+                                label: c.nameOfficial,
+                            }))}
+                            value={values.companyId}
+                            onChange={changeCompany}
+                            disabled={isEdit}
+                        />
+                    </Tooltip>
                 </FormField>
                 {isEdit ? (
                     <p className="record-form__hint">
@@ -362,27 +391,31 @@ function RecordForm({ companies, students, record }) {
                 )}
 
                 <FormField
+                    group
                     label="応募回"
                     required
                     hint="応募回は、保存の前に登録しておく必要があります。"
                     error={fieldErrors.applicationRoundId}
                 >
-                    <Select
-                        placeholder={
-                            values.companyId && values.studentUserId
-                                ? '応募回を選択'
-                                : '企業を選択してください'
-                        }
-                        options={rounds.map((r) => ({
-                            value: r.applicationRoundId,
-                            label: `ID ${r.applicationRoundId}（${STAGE_LABELS[r.stage]}${
-                                r.applicationDate ? `・応募日 ${r.applicationDate}` : ''
-                            }）`,
-                        }))}
-                        value={selectedRoundId}
-                        onChange={(event) => set('applicationRoundId', event.target.value)}
-                        disabled={isEdit || !roundsKey || roundsLoading}
-                    />
+                    {roundOptions.length > 0 ? (
+                        <Tooltip content={lockedTip} focusable className="record-form__locked">
+                            <RadioGroup
+                                variant="card"
+                                options={roundOptions}
+                                value={selectedRoundId}
+                                onChange={(value) => set('applicationRoundId', value)}
+                                disabled={isEdit || roundsLoading}
+                            />
+                        </Tooltip>
+                    ) : (
+                        <p className="record-form__empty">
+                            {!roundsKey
+                                ? '企業を選択すると、応募回が表示されます。'
+                                : roundsLoading
+                                  ? ''
+                                  : 'この企業の応募回はまだありません。'}
+                        </p>
+                    )}
                 </FormField>
                 {roundsLoading && <Loading />}
                 {roundsError && (
@@ -410,12 +443,11 @@ function RecordForm({ companies, students, record }) {
                 <FormField
                     label="実施日"
                     error={fieldErrors.conductedOn}
-                    hint="下書きでは未入力でも保存できます。YYYY/MM/DD の形式で入力してください。"
+                    hint="下書きでは未入力でも保存できます。直接入力するか、カレンダーから選べます。"
                 >
-                    <TextInput
-                        placeholder="2026/10/01"
+                    <DatePicker
                         value={values.conductedOn}
-                        onChange={(event) => set('conductedOn', event.target.value)}
+                        onChange={(value) => set('conductedOn', value)}
                     />
                 </FormField>
 

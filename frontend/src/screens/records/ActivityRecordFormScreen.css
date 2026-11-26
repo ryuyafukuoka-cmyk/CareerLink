@@ -63,3 +63,63 @@
     padding: 0;
     border: 0;
 }
+
+/* ---- Redesign: progress, locked fields, empty round list, sticky action bar ---- */
+
+.record-form__progress {
+    margin-bottom: var(--space-5);
+}
+
+.record-form__locked {
+    display: block;
+}
+
+.record-form__empty {
+    margin: 0;
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    background: var(--color-surface-alt);
+    border: var(--border-width) dashed var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.record-form__empty:empty {
+    display: none;
+}
+
+/* Activity types as chips. */
+.record-form__types {
+    gap: var(--space-3);
+}
+
+/* Save buttons stay in view while the long form scrolls. */
+.record-form__actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin: var(--space-5) calc(var(--space-5) * -1) calc(var(--space-5) * -1);
+    padding: var(--space-3) var(--space-5);
+    background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+    border-top: var(--border-width) solid var(--color-border);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    backdrop-filter: blur(6px);
+}
+
+/* Each section opens with a quiet fade when its type is ticked. */
+.record-form__section {
+    animation: record-form-section-in var(--duration-base) var(--ease-out) backwards;
+}
+
+@keyframes record-form-section-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .record-form__section {
+        animation: none;
+    }
+}

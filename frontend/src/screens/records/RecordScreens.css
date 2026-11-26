@@ -88,3 +88,37 @@
 .record-screen__delete-error {
     margin: var(--space-3) 0 0;
 }
+
+/* ---- Record list (SC-02-01) ---- */
+
+.record-screen__new {
+    display: inline-flex;
+    gap: var(--space-2);
+    align-items: center;
+}
+
+.record-screen__tab-label {
+    display: inline-flex;
+    gap: var(--space-2);
+    align-items: center;
+}
+
+.record-screen__types {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+}
+
+.record-screen__table-wrap tbody tr {
+    transition: background-color var(--transition-fast);
+}
+
+.record-screen__table-wrap tbody tr:hover {
+    background: var(--color-surface-alt);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .record-screen__table-wrap tbody tr {
+        transition: none;
+    }
+}

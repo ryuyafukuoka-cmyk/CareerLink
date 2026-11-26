@@ -1,21 +1,21 @@
 import { useEffect, useState } from 'react';
-import { Link, generatePath, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import {
-    ACTIVITY_TYPE_LABELS,
-    RECORD_STATUSES,
-    RECORD_STATUS_LABELS,
-    ROLES,
-} from '@shared/definitions';
+import { Plus } from 'lucide-react';
+import { generatePath, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { ACTIVITY_TYPE_LABELS, RECORD_STATUSES, ROLES } from '@shared/definitions';
 import { listDrafts, listMyActivityRecords } from '@/api/records.js';
 import { listUsers } from '@/api/users.js';
 import { useAuth } from '@/auth/useAuth.js';
+import Badge from '@/components/Badge/Badge.jsx';
 import Button from '@/components/Button/Button.jsx';
 import EmptyState from '@/components/EmptyState/EmptyState.jsx';
 import ErrorMessage from '@/components/ErrorMessage/ErrorMessage.jsx';
 import FormField from '@/components/FormField/FormField.jsx';
 import Loading from '@/components/Loading/Loading.jsx';
-import Notice from '@/components/Notice/Notice.jsx';
 import Select from '@/components/Select/Select.jsx';
+import StatusMark from '@/components/StatusMark/StatusMark.jsx';
+import Tabs from '@/components/Tabs/Tabs.jsx';
+import TextLink from '@/components/TextLink/TextLink.jsx';
+import { toast } from '@/components/Toast/toast.js';
 import { getMessage } from '@/messages';
 import { PATHS } from '@/routes/paths.js';
 import { formatDateTime } from '@/utils/date.js';
@@ -23,12 +23,10 @@ import { displayDate, studentOptions } from '../rounds/roundHelpers.js';
 import '../rounds/RoundScreens.css';
 import './RecordScreens.css';
 
-const typesText = (types) => types.map((type) => ACTIVITY_TYPE_LABELS[type]).join('、');
-
 // One table of record summaries. showUpdatedAt is for drafts (sorted by last update).
 function RecordTable({ records, showUpdatedAt = false, canWrite }) {
     return (
-        <div className="round-screen__table-wrap">
+        <div className="round-screen__table-wrap record-screen__table-wrap">
             <table className="round-screen__table">
                 <thead>
                     <tr>
@@ -45,20 +43,34 @@ function RecordTable({ records, showUpdatedAt = false, canWrite }) {
                         const params = { recordId: record.recordId };
                         return (
                             <tr key={record.recordId}>
-                                <td>{record.companyName}</td>
-                                <td>{typesText(record.activityTypes)}</td>
+                                <td>
+                                    <TextLink to={generatePath(PATHS.recordDetail, params)}>
+                                        {record.companyName}
+                                    </TextLink>
+                                </td>
+                                <td>
+                                    <span className="record-screen__types">
+                                        {record.activityTypes.map((type) => (
+                                            <Badge key={type} size="sm">
+                                                {ACTIVITY_TYPE_LABELS[type]}
+                                            </Badge>
+                                        ))}
+                                    </span>
+                                </td>
                                 <td>{displayDate(record.conductedOn)}</td>
                                 {showUpdatedAt && <td>{formatDateTime(record.updatedAt)}</td>}
-                                <td>{RECORD_STATUS_LABELS[record.status]}</td>
+                                <td>
+                                    <StatusMark status={record.status} size="sm" />
+                                </td>
                                 <td>
                                     <span className="round-screen__links">
-                                        <Link to={generatePath(PATHS.recordDetail, params)}>
+                                        <TextLink to={generatePath(PATHS.recordDetail, params)}>
                                             詳細
-                                        </Link>
+                                        </TextLink>
                                         {canWrite && (
-                                            <Link to={generatePath(PATHS.recordEdit, params)}>
+                                            <TextLink to={generatePath(PATHS.recordEdit, params)}>
                                                 編集
-                                            </Link>
+                                            </TextLink>
                                         )}
                                     </span>
                                 </td>
@@ -71,12 +83,24 @@ function RecordTable({ records, showUpdatedAt = false, canWrite }) {
     );
 }
 
+// Tab title with a count.
+function TabLabel({ text, count }) {
+    return (
+        <span className="record-screen__tab-label">
+            {text}
+            <Badge size="sm" tone="neutral">
+                {count}
+            </Badge>
+        </span>
+    );
+}
+
 // SC-02-01 Activity record list.
 // Own records are shown in two separate groups: drafts (last update, newest first) and published (date, newest first).
 // Admins also see drafts of all students, or of one chosen student (kept in the URL).
 function RecordListScreen() {
     const navigate = useNavigate();
-    const { state } = useLocation();
+    const { state, pathname, search } = useLocation();
     const { role } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const isAdmin = role === ROLES.ADMIN;
@@ -109,6 +133,17 @@ function RecordListScreen() {
         };
     }, [isAdmin, studentUserId, requestKey]);
 
+    // Result message from the form (S-002 / S-003 ...): show it once as a toast, then clear it
+    // from the history entry so a refresh does not show it again.
+    const noticeId = state?.noticeId;
+    const noticeTone = state?.noticeTone;
+    useEffect(() => {
+        if (!noticeId) return;
+        const show = noticeTone === 'error' ? toast.error : toast.success;
+        show(getMessage(noticeId));
+        navigate(`${pathname}${search}`, { replace: true, state: null });
+    }, [noticeId, noticeTone, navigate, pathname, search]);
+
     if (result.key !== requestKey) return <Loading centered />;
 
     const { data, error } = result;
@@ -126,45 +161,44 @@ function RecordListScreen() {
 
     function handleStudentChange(event) {
         const value = event.target.value;
-        setSearchParams(value ? { studentUserId: value } : {});
+        setSearchParams(value ? { tab: 'students', studentUserId: value } : { tab: 'students' });
     }
 
-    return (
-        <main className="round-screen">
-            <div className="round-screen__header">
-                <h1>活動記録</h1>
-                {canWrite && (
-                    <Button onClick={() => navigate(PATHS.recordNew)}>活動記録を登録する</Button>
-                )}
-            </div>
-
-            {state?.noticeId && <Notice message={getMessage(state.noticeId)} />}
-
-            <section className="record-screen__section">
-                <h2>下書き</h2>
-                {drafts.length === 0 ? (
+    const tabs = [
+        {
+            value: 'drafts',
+            label: <TabLabel text="下書き" count={drafts.length} />,
+            content:
+                drafts.length === 0 ? (
                     <EmptyState message={getMessage('N-006')} />
                 ) : (
                     <RecordTable records={drafts} showUpdatedAt canWrite={canWrite} />
-                )}
-            </section>
-
-            <section className="record-screen__section">
-                <h2>公開済み</h2>
-                {published.length === 0 ? (
+                ),
+        },
+        {
+            value: 'published',
+            label: <TabLabel text="公開済み" count={published.length} />,
+            content:
+                published.length === 0 ? (
                     <EmptyState message={getMessage('N-006')}>
                         {role === ROLES.INSTRUCTOR && (
-                            <Link to={PATHS.search}>過去情報検索で公開済みの記録を探す</Link>
+                            <TextLink to={PATHS.search}>
+                                過去情報検索で公開済みの記録を探す
+                            </TextLink>
                         )}
                     </EmptyState>
                 ) : (
                     <RecordTable records={published} canWrite={canWrite} />
-                )}
-            </section>
+                ),
+        },
+    ];
 
-            {isAdmin && (
-                <section className="record-screen__section">
-                    <h2>学生の下書き（管理者）</h2>
+    if (isAdmin) {
+        tabs.push({
+            value: 'students',
+            label: <TabLabel text="学生の下書き" count={data.studentDrafts.length} />,
+            content: (
+                <div className="record-screen__section">
                     <div className="round-screen__filter">
                         <FormField label="対象学生">
                             <Select
@@ -180,8 +214,47 @@ function RecordListScreen() {
                     ) : (
                         <RecordTable records={data.studentDrafts} showUpdatedAt canWrite />
                     )}
-                </section>
-            )}
+                </div>
+            ),
+        });
+    }
+
+    // The open tab lives in the URL (?tab=), so it survives the reload the student filter causes.
+    const requestedTab = searchParams.get('tab');
+    const activeTab = tabs.some((tab) => tab.value === requestedTab)
+        ? requestedTab
+        : drafts.length > 0
+          ? 'drafts'
+          : 'published';
+
+    function handleTabChange(value) {
+        setSearchParams(
+            value === 'students' && studentUserId ? { tab: value, studentUserId } : { tab: value },
+            { replace: true },
+        );
+    }
+
+    return (
+        <main className="round-screen">
+            <div className="round-screen__header">
+                <h1>活動記録</h1>
+                {canWrite && (
+                    <Button
+                        className="record-screen__new"
+                        onClick={() => navigate(PATHS.recordNew)}
+                    >
+                        <Plus size={18} aria-hidden="true" />
+                        活動記録を登録する
+                    </Button>
+                )}
+            </div>
+
+            <Tabs
+                label="活動記録の種類"
+                items={tabs}
+                value={activeTab}
+                onChange={handleTabChange}
+            />
         </main>
     );
 }
