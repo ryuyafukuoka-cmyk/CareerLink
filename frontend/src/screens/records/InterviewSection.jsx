@@ -6,11 +6,12 @@ import FormField from '@/components/FormField/FormField.jsx';
 import Select from '@/components/Select/Select.jsx';
 import TextArea from '@/components/TextArea/TextArea.jsx';
 import TextInput from '@/components/TextInput/TextInput.jsx';
+import OptionalFields from './OptionalFields.jsx';
 import { emptyQuestion } from './sectionDefaults.js';
 import './InterviewSection.css';
 
-// Interview details (questions and reflections), shown in the section drawer (F-004-01).
-// Time, format and interviewer count are in InterviewBasics.
+// Interview questions, shown in a drawer (F-004-01). Time, format and interviewer count are in
+// InterviewBasics; the impression and optional notes are in InterviewReflection.
 //
 // value:        form state, see emptyInterview() in sectionDefaults.js
 // onChange:     called with the next value (the whole interview object)
@@ -52,7 +53,6 @@ function InterviewSection({ value, onChange, needCategory, errors = {}, errorsVe
     }
 
     const set = (field, next) => onChange({ ...value, [field]: next });
-    const fromEvent = (field) => (event) => set(field, event.target.value);
 
     const setQuestion = (index, patch) =>
         set(
@@ -82,10 +82,7 @@ function InterviewSection({ value, onChange, needCategory, errors = {}, errorsVe
 
     return (
         <div className="interview-section">
-            <div className="interview-section__questions">
-                <h3 className="interview-section__heading">
-                    質問<span className="interview-section__required">必須（1件以上）</span>
-                </h3>
+            <div className="interview-questions">
                 <p className="interview-section__hint">
                     {needCategory
                         ? '質問カテゴリは、下書きでも必ず選択してください。'
@@ -106,7 +103,9 @@ function InterviewSection({ value, onChange, needCategory, errors = {}, errorsVe
                         title={`質問${qIndex + 1}`}
                         summary={question.content.trim() || '（未入力）'}
                         open={qIndex === openIndex}
-                        onOpen={() => openQuestion(qIndex)}
+                        onOpen={() =>
+                            qIndex === openIndex ? setOpenIndex(-1) : openQuestion(qIndex)
+                        }
                         invalid={hasError(qIndex)}
                     >
                         <FormField
@@ -138,52 +137,64 @@ function InterviewSection({ value, onChange, needCategory, errors = {}, errorsVe
                             />
                         </FormField>
 
-                        <FormField label="回答" error={errors[`questions.${qIndex}.answer`]}>
-                            <TextArea
-                                rows={3}
-                                value={question.answer}
-                                onChange={(event) =>
-                                    setQuestion(qIndex, { answer: event.target.value })
-                                }
-                            />
-                        </FormField>
-
-                        <FormField
-                            group
-                            label="深掘り質問"
-                            hint="質問文のみを記録します。"
-                            error={errors[`questions.${qIndex}.followUps`]}
+                        <OptionalFields
+                            label="回答・深掘り質問"
+                            hasValue={Boolean(question.answer.trim() || question.followUps.length)}
+                            hasError={Object.keys(errors).some(
+                                (key) =>
+                                    key.startsWith(`questions.${qIndex}.answer`) ||
+                                    key.startsWith(`questions.${qIndex}.followUps`),
+                            )}
                         >
-                            {question.followUps.map((text, fIndex) => (
-                                <div key={fIndex} className="interview-section__followup">
-                                    <FormField
-                                        label={
-                                            <span className="visually-hidden">
-                                                {`質問${qIndex + 1}の深掘り質問${fIndex + 1}`}
-                                            </span>
-                                        }
-                                        className="interview-section__followup-input"
-                                        error={errors[`questions.${qIndex}.followUps.${fIndex}`]}
-                                    >
-                                        <TextInput
-                                            value={text}
-                                            onChange={(event) =>
-                                                setFollowUp(qIndex, fIndex, event.target.value)
+                            <FormField label="回答" error={errors[`questions.${qIndex}.answer`]}>
+                                <TextArea
+                                    rows={3}
+                                    value={question.answer}
+                                    onChange={(event) =>
+                                        setQuestion(qIndex, { answer: event.target.value })
+                                    }
+                                />
+                            </FormField>
+
+                            <FormField
+                                group
+                                label="深掘り質問"
+                                hint="質問文のみを記録します。"
+                                error={errors[`questions.${qIndex}.followUps`]}
+                            >
+                                {question.followUps.map((text, fIndex) => (
+                                    <div key={fIndex} className="interview-section__followup">
+                                        <FormField
+                                            label={
+                                                <span className="visually-hidden">
+                                                    {`質問${qIndex + 1}の深掘り質問${fIndex + 1}`}
+                                                </span>
                                             }
-                                        />
-                                    </FormField>
-                                    <Button
-                                        variant="secondary"
-                                        onClick={() => removeFollowUp(qIndex, fIndex)}
-                                    >
-                                        削除
-                                    </Button>
-                                </div>
-                            ))}
-                            <Button variant="secondary" onClick={() => addFollowUp(qIndex)}>
-                                深掘り質問を追加
-                            </Button>
-                        </FormField>
+                                            className="interview-section__followup-input"
+                                            error={
+                                                errors[`questions.${qIndex}.followUps.${fIndex}`]
+                                            }
+                                        >
+                                            <TextInput
+                                                value={text}
+                                                onChange={(event) =>
+                                                    setFollowUp(qIndex, fIndex, event.target.value)
+                                                }
+                                            />
+                                        </FormField>
+                                        <Button
+                                            variant="secondary"
+                                            onClick={() => removeFollowUp(qIndex, fIndex)}
+                                        >
+                                            削除
+                                        </Button>
+                                    </div>
+                                ))}
+                                <Button onClick={() => addFollowUp(qIndex)}>
+                                    深掘り質問を追加
+                                </Button>
+                            </FormField>
+                        </OptionalFields>
 
                         <div className="interview-section__question-actions">
                             <Button
@@ -197,22 +208,8 @@ function InterviewSection({ value, onChange, needCategory, errors = {}, errorsVe
                     </AccordionItem>
                 ))}
 
-                <Button variant="secondary" onClick={addQuestion}>
-                    質問を追加
-                </Button>
+                <Button onClick={addQuestion}>質問を追加</Button>
             </div>
-
-            <FormField label="面接の所感" required error={errors.impression}>
-                <TextArea value={value.impression} onChange={fromEvent('impression')} />
-            </FormField>
-
-            <FormField label="注意点" error={errors.caution}>
-                <TextArea value={value.caution} onChange={fromEvent('caution')} />
-            </FormField>
-
-            <FormField label="後輩へのアドバイス" error={errors.adviceToJuniors}>
-                <TextArea value={value.adviceToJuniors} onChange={fromEvent('adviceToJuniors')} />
-            </FormField>
         </div>
     );
 }

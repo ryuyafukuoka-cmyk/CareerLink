@@ -35,20 +35,6 @@
     cursor: not-allowed;
 }
 
-.record-form__types {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-4);
-}
-
-.record-form__section {
-    margin-top: var(--space-5);
-    padding: var(--space-4);
-    background: var(--color-surface-alt);
-    border: var(--border-width) solid var(--color-border);
-    border-radius: var(--radius-md);
-}
-
 .record-form__actions {
     display: flex;
     justify-content: flex-end;
@@ -102,11 +88,6 @@
     display: none;
 }
 
-/* Activity types as chips. */
-.record-form__types {
-    gap: var(--space-3);
-}
-
 /* Save buttons stay in view while the long form scrolls. */
 .record-form__actions {
     position: sticky;
@@ -120,41 +101,151 @@
     backdrop-filter: blur(6px);
 }
 
-/* Button that opens the section's detail drawer. */
-.record-form__details {
+/* ---- Collapsed cards: one open at a time ---- */
+
+.record-card__title {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.record-card__done {
+    color: var(--color-success);
+}
+
+/* Items inside an open card, with room between them. */
+.record-card__stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.record-card__next {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: var(--space-4);
+}
+
+/* Activity types as large tiles. */
+.record-form__tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+    gap: var(--space-3);
+}
+
+.record-form__tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-4) var(--space-3);
+    font: inherit;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text);
+    cursor: pointer;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    transition:
+        background-color var(--transition-fast),
+        border-color var(--transition-fast);
+}
+
+.record-form__tile:hover {
+    border-color: var(--color-border-strong);
+}
+
+.record-form__tile:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+.record-form__tile[aria-pressed='true'] {
+    color: var(--color-primary);
+    background: var(--color-surface-alt);
+    border-color: var(--color-primary);
+}
+
+/* Optional inputs: a quiet "+ 追加" link until opened. */
+.record-optional__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    align-self: flex-start;
+    padding: 0;
+    font: inherit;
+    font-size: var(--font-size-sm);
+    color: var(--color-primary);
+    cursor: pointer;
+    background: none;
+    border: 0;
+}
+
+.record-optional__toggle:hover {
+    text-decoration: underline;
+}
+
+.record-optional__toggle:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+.record-optional {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    animation: fade-rise-in var(--duration-base) var(--ease-out) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .record-form__tile,
+    .record-optional {
+        transition: none;
+        animation: none;
+    }
+}
+
+/* A secondary button that stays visible on the card: primary-colored outline and text. */
+.button.record-form__outline:not(:disabled) {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.button.record-form__outline:hover:not(:disabled) {
+    background: var(--color-primary-soft);
+}
+
+/* ---- Layer shades: each nested layer is a different shade from the one around it ---- */
+
+/* Page card (surface) -> card panels (alt) -> anything panel-like inside a panel (surface again). */
+.record-form__card .accordion-item {
+    background: var(--color-surface-alt);
+}
+
+.record-form__card .accordion-item__body .accordion-item {
+    background: var(--color-surface);
+}
+
+/* In the questions drawer (surface) the question panels are one shade apart. */
+.interview-questions .accordion-item {
+    background: var(--color-surface-alt);
+}
+
+/* Row on the interview card that opens the questions drawer. */
+.record-card__drawer-row {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-3);
 }
 
-.record-form__details-status {
+.record-card__drawer-status {
     font-size: var(--font-size-sm);
     color: var(--color-text-muted);
 }
 
-.record-form__details-error {
-    margin: var(--space-2) 0 0;
+.record-card__drawer-error {
+    margin: 0;
     font-size: var(--font-size-sm);
     color: var(--color-danger);
-    animation: fade-rise-in var(--duration-base) var(--ease-out) backwards;
-}
-
-/* Each section opens with a quiet fade when its type is ticked. */
-.record-form__section {
-    animation: record-form-section-in var(--duration-base) var(--ease-out) backwards;
-}
-
-@keyframes record-form-section-in {
-    from {
-        opacity: 0;
-        transform: translateY(6px);
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .record-form__section,
-    .record-form__details-error {
-        animation: none;
-    }
 }

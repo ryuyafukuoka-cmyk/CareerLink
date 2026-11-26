@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Check, ClipboardList, Ellipsis, MessagesSquare, Presentation } from 'lucide-react';
 import { Link, generatePath, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
     ACTIVITY_TYPE_LABELS,
@@ -21,7 +22,7 @@ import { listApplicationRounds } from '@/api/rounds.js';
 import { listUsers } from '@/api/users.js';
 import { useAuth } from '@/auth/useAuth.js';
 import Button from '@/components/Button/Button.jsx';
-import Checkbox from '@/components/Checkbox/Checkbox.jsx';
+import AccordionItem from '@/components/Accordion/AccordionItem.jsx';
 import Combobox from '@/components/Combobox/Combobox.jsx';
 import ConfirmDialog from '@/components/ConfirmDialog/ConfirmDialog.jsx';
 import DatePicker from '@/components/DatePicker/DatePicker.jsx';
@@ -58,6 +59,30 @@ const latestRoundId = (rounds) =>
         (max, r) => (Number(r.applicationRoundId) > Number(max) ? r.applicationRoundId : max),
         '',
     );
+
+const TYPE_ICONS = {
+    interview: MessagesSquare,
+    exam: ClipboardList,
+    briefing: Presentation,
+    other: Ellipsis,
+};
+const BASIC_ERROR_KEYS = ['ownerUserId', 'companyId', 'applicationRoundId', 'conductedOn'];
+
+// Which card an error belongs to: 'basics', 'types' or the activity type of a section.
+const cardOfError = (key) =>
+    BASIC_ERROR_KEYS.includes(key)
+        ? 'basics'
+        : key === 'activityTypes'
+          ? 'types'
+          : key.split('.')[0];
+
+// Card title with a check mark once the card has everything it needs.
+const cardTitle = (text, done) => (
+    <span className="record-card__title">
+        {done && <Check size={16} aria-hidden="true" className="record-card__done" />}
+        {text}
+    </span>
+);
 
 // The form, for a new record (/records/new) or for editing one (/records/:recordId/edit).
 // Companies (and students, for admins creating a record) are already loaded; `record` is set in edit mode.
@@ -133,6 +158,12 @@ function RecordForm({ companies, students, record }) {
     const [confirmCompleteOpen, setConfirmCompleteOpen] = useState(false);
     const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
     const [resultUnknown, setResultUnknown] = useState(false);
+    // The one card that is open: 'basics', 'types' or an activity type. Edit starts on the content.
+    const [openCard, setOpenCard] = useState(() =>
+        isEdit && initialValues.activityTypes.length > 0
+            ? initialValues.activityTypes[0]
+            : 'basics',
+    );
     const set = (field, value) => setValues((current) => ({ ...current, [field]: value }));
     const setSection = (type, value) =>
         setValues((current) => ({ ...current, sections: { ...current.sections, [type]: value } }));
@@ -255,8 +286,54 @@ function RecordForm({ companies, students, record }) {
     const stepsDone = progressSteps.filter(Boolean).length;
     const lockedTip = isEdit ? '保存後は変更できません' : '';
 
+    // Cards in order. Each shows a one-line summary while closed; [次へ] opens the following one.
+    const cardIds = ['basics', 'types', ...sections.map((section) => section.type)];
+    const currentCard = cardIds.includes(openCard) ? openCard : null;
+    const hasError = (id) => Object.keys(fieldErrors).some((key) => cardOfError(key) === id);
+    const companyName = companyList.find((c) => c.companyId === values.companyId)?.nameOfficial;
+    const basicsDone = Boolean(values.companyId && selectedRoundId && values.conductedOn.trim());
+    const basicsSummary =
+        [
+            companyName,
+            selectedRound && `${roundNumbers.get(selectedRound.applicationRoundId)}回目の応募`,
+            values.conductedOn.trim() || '実施日未設定',
+        ]
+            .filter(Boolean)
+            .join('・') || '未入力';
+    const sectionProgress = (section) => {
+        const required = section.fields.filter((field) => field.required);
+        const missing = required.filter((field) =>
+            completionErrors.some((key) =>
+                key.startsWith(`sections.${section.type}.${field.name}`),
+            ),
+        );
+        const done = !completionErrors.some((key) => key.startsWith(`sections.${section.type}`));
+        return {
+            done,
+            summary: done
+                ? '入力完了'
+                : `必須 ${required.length - missing.length}/${required.length}`,
+        };
+    };
+    const nextButton = (id) => {
+        const next = cardIds[cardIds.indexOf(id) + 1];
+        if (!next) return null;
+        const nextLabel =
+            next === 'types' ? '活動種別' : (sections.find((s) => s.type === next)?.label ?? '');
+        return (
+            <div className="record-card__next">
+                <Button onClick={() => setOpenCard(next)}>次へ：{nextLabel}</Button>
+            </div>
+        );
+    };
+
     function showFieldErrors(errors, mode) {
-        setFieldErrors(getFieldErrorTexts(errors, values.activityTypes));
+        const texts = getFieldErrorTexts(errors, values.activityTypes);
+        setFieldErrors(texts);
+        const firstBad = cardIds.find((id) =>
+            Object.keys(texts).some((key) => cardOfError(key) === id),
+        );
+        if (firstBad) setOpenCard(firstBad);
         const messageId =
             mode === SAVE_MODES.COMPLETE && errors.sections === 'E-213' ? 'E-213' : 'E-001';
         setFormError(getMessage(messageId));
@@ -378,140 +455,190 @@ function RecordForm({ companies, students, record }) {
                 )}
 
                 <fieldset className="record-form__fieldset" disabled={submitting}>
-                    {isAdmin && !isEdit && (
-                        <FormField label="対象学生" required error={fieldErrors.ownerUserId}>
-                            <Combobox
-                                placeholder="学生を選択（名前で絞り込めます）"
-                                options={studentOptions(students)}
-                                value={values.studentUserId}
-                                onChange={changeStudent}
-                            />
-                        </FormField>
-                    )}
-
-                    <FormField label="企業" required error={fieldErrors.companyId}>
-                        <Tooltip content={lockedTip} focusable className="record-form__locked">
-                            <Combobox
-                                placeholder="企業を選択（名前で絞り込めます）"
-                                options={companyList.map((c) => ({
-                                    value: c.companyId,
-                                    label: c.nameOfficial,
-                                }))}
-                                value={values.companyId}
-                                onChange={changeCompany}
-                                disabled={isEdit}
-                            />
-                        </Tooltip>
-                    </FormField>
-                    {isEdit ? (
-                        <p className="record-form__hint">
-                            企業と応募回は保存後に変更できません。誤っている場合は、この記録を削除して登録し直してください。
-                        </p>
-                    ) : (
-                        <p className="record-form__hint">
-                            企業が見つからない場合は、
-                            <button
-                                type="button"
-                                className="record-form__link"
-                                onClick={() => companyForm.open()}
-                            >
-                                企業を登録
-                            </button>
-                            してください。
-                        </p>
-                    )}
-
-                    <FormField
-                        group
-                        label="応募回"
-                        required
-                        hint="応募回は、保存の前に登録しておく必要があります。"
-                        error={fieldErrors.applicationRoundId}
+                    <AccordionItem
+                        title={cardTitle('基本情報', basicsDone)}
+                        summary={basicsSummary}
+                        open={currentCard === 'basics'}
+                        onOpen={() => setOpenCard('basics')}
+                        invalid={hasError('basics')}
                     >
-                        {roundOptions.length > 0 ? (
+                        {isAdmin && !isEdit && (
+                            <FormField label="対象学生" required error={fieldErrors.ownerUserId}>
+                                <Combobox
+                                    placeholder="学生を選択（名前で絞り込めます）"
+                                    options={studentOptions(students)}
+                                    value={values.studentUserId}
+                                    onChange={changeStudent}
+                                />
+                            </FormField>
+                        )}
+
+                        <FormField label="企業" required error={fieldErrors.companyId}>
                             <Tooltip content={lockedTip} focusable className="record-form__locked">
-                                <RadioGroup
-                                    variant="card"
-                                    options={roundOptions}
-                                    value={selectedRoundId}
-                                    onChange={(value) => set('applicationRoundId', value)}
-                                    disabled={isEdit || roundsLoading}
+                                <Combobox
+                                    placeholder="企業を選択（名前で絞り込めます）"
+                                    options={companyList.map((c) => ({
+                                        value: c.companyId,
+                                        label: c.nameOfficial,
+                                    }))}
+                                    value={values.companyId}
+                                    onChange={changeCompany}
+                                    disabled={isEdit}
                                 />
                             </Tooltip>
+                        </FormField>
+                        {isEdit ? (
+                            <p className="record-form__hint">
+                                企業と応募回は保存後に変更できません。誤っている場合は、この記録を削除して登録し直してください。
+                            </p>
                         ) : (
-                            <p className="record-form__empty">
-                                {!roundsKey
-                                    ? '企業を選択すると、応募回が表示されます。'
-                                    : roundsLoading
-                                      ? ''
-                                      : 'この企業の応募回はまだありません。'}
+                            <p className="record-form__hint">
+                                企業が見つからない場合は、
+                                <button
+                                    type="button"
+                                    className="record-form__link"
+                                    onClick={() => companyForm.open()}
+                                >
+                                    企業を登録
+                                </button>
+                                してください。
                             </p>
                         )}
-                    </FormField>
-                    {roundsLoading && <Loading />}
-                    {roundsError && (
-                        <ErrorMessage
-                            error={roundsError}
-                            onRetry={() => setReloadCount((n) => n + 1)}
-                        />
-                    )}
-                    {!isEdit && (
-                        <p className="record-form__hint">
-                            この企業の応募回がない場合は、
-                            <button
-                                type="button"
-                                className="record-form__link"
-                                disabled={!roundsKey}
-                                onClick={() => openOther(PATHS.roundNew)}
+
+                        <FormField
+                            group
+                            label="応募回"
+                            required
+                            error={fieldErrors.applicationRoundId}
+                        >
+                            {roundOptions.length > 0 ? (
+                                <Tooltip
+                                    content={lockedTip}
+                                    focusable
+                                    className="record-form__locked"
+                                >
+                                    <RadioGroup
+                                        variant="card"
+                                        options={roundOptions}
+                                        value={selectedRoundId}
+                                        onChange={(value) => set('applicationRoundId', value)}
+                                        disabled={isEdit || roundsLoading}
+                                    />
+                                </Tooltip>
+                            ) : (
+                                <p className="record-form__empty">
+                                    {!roundsKey
+                                        ? '企業を選択すると、応募回が表示されます。'
+                                        : roundsLoading
+                                          ? ''
+                                          : 'この企業の応募回はまだありません。'}
+                                </p>
+                            )}
+                        </FormField>
+                        {roundsLoading && <Loading />}
+                        {roundsError && (
+                            <ErrorMessage
+                                error={roundsError}
+                                onRetry={() => setReloadCount((n) => n + 1)}
+                            />
+                        )}
+                        {!isEdit && (
+                            <p className="record-form__hint">
+                                応募回がない場合は、
+                                <button
+                                    type="button"
+                                    className="record-form__link"
+                                    disabled={!roundsKey}
+                                    onClick={() => openOther(PATHS.roundNew)}
+                                >
+                                    応募回を登録
+                                </button>
+                                してください。登録後、この画面に戻ります。
+                                {selectedRound &&
+                                    `（選考段階：${STAGE_LABELS[selectedRound.stage]}）`}
+                            </p>
+                        )}
+
+                        <FormField
+                            label="実施日"
+                            error={fieldErrors.conductedOn}
+                            hint="下書きでは未入力でも保存できます。"
+                        >
+                            <DatePicker
+                                value={values.conductedOn}
+                                onChange={(value) => set('conductedOn', value)}
+                            />
+                        </FormField>
+                        {nextButton('basics')}
+                    </AccordionItem>
+
+                    <AccordionItem
+                        title={cardTitle('活動種別', values.activityTypes.length > 0)}
+                        summary={
+                            values.activityTypes.length > 0
+                                ? ACTIVITY_TYPE_ORDER.filter((t) =>
+                                      values.activityTypes.includes(t),
+                                  )
+                                      .map((t) => ACTIVITY_TYPE_LABELS[t])
+                                      .join('・')
+                                : '未選択'
+                        }
+                        open={currentCard === 'types'}
+                        onOpen={() => setOpenCard('types')}
+                        invalid={hasError('types')}
+                    >
+                        <FormField
+                            group
+                            label="何を行いましたか？"
+                            required
+                            hint="複数選べます。選んだ分だけ、次のカードが増えます。"
+                            error={fieldErrors.activityTypes}
+                        >
+                            <div className="record-form__tiles">
+                                {ACTIVITY_TYPE_ORDER.map((type) => {
+                                    const Icon = TYPE_ICONS[type];
+                                    const on = values.activityTypes.includes(type);
+                                    return (
+                                        <button
+                                            key={type}
+                                            type="button"
+                                            className="record-form__tile"
+                                            aria-pressed={on}
+                                            onClick={() => toggleType(type, !on)}
+                                        >
+                                            <Icon size={22} aria-hidden="true" />
+                                            {ACTIVITY_TYPE_LABELS[type]}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </FormField>
+                        {nextButton('types')}
+                    </AccordionItem>
+
+                    {sections.map((section) => {
+                        const progress = sectionProgress(section);
+                        return (
+                            <AccordionItem
+                                key={section.type}
+                                title={cardTitle(section.label, progress.done)}
+                                summary={progress.summary}
+                                open={currentCard === section.type}
+                                onOpen={() => setOpenCard(section.type)}
+                                invalid={hasError(section.type)}
                             >
-                                応募回を登録
-                            </button>
-                            してください。登録後、この画面に戻ります。
-                            {selectedRound && `（選考段階：${STAGE_LABELS[selectedRound.stage]}）`}
-                        </p>
-                    )}
-
-                    <FormField
-                        label="実施日"
-                        error={fieldErrors.conductedOn}
-                        hint="下書きでは未入力でも保存できます。直接入力するか、カレンダーから選べます。"
-                    >
-                        <DatePicker
-                            value={values.conductedOn}
-                            onChange={(value) => set('conductedOn', value)}
-                        />
-                    </FormField>
-
-                    <FormField
-                        group
-                        label="活動種別"
-                        required
-                        hint="複数選択できます。"
-                        error={fieldErrors.activityTypes}
-                    >
-                        <div className="record-form__types">
-                            {ACTIVITY_TYPE_ORDER.map((type) => (
-                                <Checkbox
-                                    key={type}
-                                    label={ACTIVITY_TYPE_LABELS[type]}
-                                    checked={values.activityTypes.includes(type)}
-                                    onChange={(event) => toggleType(type, event.target.checked)}
+                                <RecordSection
+                                    section={section}
+                                    value={values.sections[section.type]}
+                                    onChange={(next) => setSection(section.type, next)}
+                                    needCategory={needCategory}
+                                    errors={sectionErrorTexts(fieldErrors, section.type)}
+                                    errorsVersion={fieldErrors}
                                 />
-                            ))}
-                        </div>
-                    </FormField>
-
-                    {sections.map((section) => (
-                        <RecordSection
-                            key={section.type}
-                            section={section}
-                            value={values.sections[section.type]}
-                            onChange={(next) => setSection(section.type, next)}
-                            needCategory={needCategory}
-                            errors={sectionErrorTexts(fieldErrors, section.type)}
-                            errorsVersion={fieldErrors}
-                        />
-                    ))}
+                                {nextButton(section.type)}
+                            </AccordionItem>
+                        );
+                    })}
                 </fieldset>
 
                 <p className="record-form__hint">
@@ -529,6 +656,7 @@ function RecordForm({ companies, students, record }) {
                     {!isCompletedRecord && (
                         <Button
                             variant="secondary"
+                            className="record-form__outline"
                             loading={submitting && pendingMode === SAVE_MODES.DRAFT}
                             disabled={submitting || roundsLoading || retry.secondsLeft > 0}
                             onClick={() => requestSave(SAVE_MODES.DRAFT)}
