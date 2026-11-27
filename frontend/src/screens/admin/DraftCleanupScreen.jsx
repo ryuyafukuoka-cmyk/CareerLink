@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import {
     ACTIVITY_TYPE_LABELS,
@@ -8,6 +9,7 @@ import {
 } from '@shared/definitions';
 import { deleteActivityRecord, getDeleteConfirmInfo, listDrafts } from '@/api/records.js';
 import { listUsers } from '@/api/users.js';
+import AnimatedNumber from '@/components/AnimatedNumber/AnimatedNumber.jsx';
 import Button from '@/components/Button/Button.jsx';
 import ConfirmDialog from '@/components/ConfirmDialog/ConfirmDialog.jsx';
 import EmptyState from '@/components/EmptyState/EmptyState.jsx';
@@ -104,12 +106,12 @@ function DraftCleanupScreen() {
     return (
         <main className="admin-screen">
             <h1>卒業・退校後の下書き削除</h1>
-            <p className="admin-screen__muted">
+            <p className="admin-screen__lead">
                 学生を選ぶと、その学生の下書きが表示されます。削除すると元に戻せません。公開済みの記録は削除されません。
             </p>
 
             {students.error && <ErrorMessage error={students.error} />}
-            <div className="admin-screen__filters">
+            <div className="admin-screen__filters admin-screen__filters--single">
                 <FormField label="対象の学生">
                     <Select
                         options={students.list.map((s) => ({
@@ -132,42 +134,39 @@ function DraftCleanupScreen() {
             {drafts && drafts.length === 0 && <EmptyState message={getMessage('N-006')} />}
             {drafts && drafts.length > 0 && (
                 <>
-                    <Notice
-                        message={`${student?.displayName ?? ''}さんの下書きが${drafts.length}件あります。`}
-                    />
-                    <div className="admin-screen__table-wrap">
-                        <table className="admin-screen__table">
-                            <thead>
-                                <tr>
-                                    <th scope="col">企業</th>
-                                    <th scope="col">活動種別</th>
-                                    <th scope="col">実施日</th>
-                                    <th scope="col">最終更新</th>
-                                    <th scope="col">
-                                        <span className="visually-hidden">操作</span>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {drafts.map((draft) => (
-                                    <tr key={draft.recordId}>
-                                        <td>{draft.companyName}</td>
-                                        <td>{typeText(draft.activityTypes)}</td>
-                                        <td>{draft.conductedOn ?? '未設定'}</td>
-                                        <td>{formatDateTime(draft.updatedAt)}</td>
-                                        <td>
-                                            <Button
-                                                variant="danger"
-                                                onClick={() => askDelete(draft.recordId)}
-                                            >
-                                                削除
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    <p className="admin-screen__count" role="status">
+                        {student?.displayName ?? ''}さんの下書き
+                        <AnimatedNumber
+                            className="admin-screen__count-value"
+                            value={drafts.length}
+                        />
+                        件
+                    </p>
+                    <ul className="admin-screen__items">
+                        {drafts.map((draft) => (
+                            <li
+                                key={draft.recordId}
+                                className="admin-screen__item admin-screen__item--draft"
+                            >
+                                <span className="admin-screen__link-plain">
+                                    {draft.companyName}
+                                </span>
+                                <span className="admin-screen__cell">
+                                    {typeText(draft.activityTypes)}
+                                </span>
+                                <span className="admin-screen__cell">
+                                    {draft.conductedOn ?? '未設定'}
+                                </span>
+                                <span className="admin-screen__cell">
+                                    {formatDateTime(draft.updatedAt)}
+                                </span>
+                                <Button variant="danger" onClick={() => askDelete(draft.recordId)}>
+                                    <Trash2 size={16} aria-hidden="true" />
+                                    削除
+                                </Button>
+                            </li>
+                        ))}
+                    </ul>
                 </>
             )}
 

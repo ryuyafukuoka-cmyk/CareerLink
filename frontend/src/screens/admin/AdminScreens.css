@@ -1,3 +1,5 @@
+/* Admin screens (SC-06-01 to SC-06-07). Same look as the company list: a soft filter panel,
+   directory rows where the whole row opens the item, and quiet cards for forms and steps. */
 .admin-screen {
     display: flex;
     flex-direction: column;
@@ -9,9 +11,31 @@
 
 .admin-screen__header {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-4);
+}
+
+.admin-screen__muted,
+.admin-screen__lead {
+    color: var(--color-text-muted);
+}
+
+/* Filter panel */
+.admin-screen__filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: var(--space-4);
+    align-items: start;
+    padding: var(--space-5);
+    background: var(--color-primary-soft);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.admin-screen__filters--single {
+    grid-template-columns: minmax(0, var(--form-max-width));
 }
 
 .admin-screen__actions {
@@ -20,39 +44,175 @@
     gap: var(--space-3);
 }
 
+.admin-screen__filters .admin-screen__actions {
+    grid-column: 1 / -1;
+}
+
+.admin-screen__actions .button {
+    display: inline-flex;
+    gap: var(--space-2);
+    align-items: center;
+}
+
+/* Count */
+.admin-screen__count {
+    color: var(--color-text-muted);
+}
+
+.admin-screen__count-value {
+    margin-right: var(--space-1);
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text);
+}
+
+/* Directory rows (user list, draft list) */
+.admin-screen__items {
+    padding: 0;
+    list-style: none;
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.admin-screen__item {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) 7rem 7rem 7rem;
+    gap: var(--space-4);
+    align-items: center;
+    padding: var(--space-4) var(--space-5);
+    transition: background-color var(--transition-fast);
+}
+
+.admin-screen__item--draft {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr) 8rem 11rem auto;
+}
+
+.admin-screen__item + .admin-screen__item {
+    border-top: var(--border-width) solid var(--color-border);
+}
+
+.admin-screen__item:first-child {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.admin-screen__item:last-child {
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.admin-screen__item:only-child {
+    border-radius: var(--radius-lg);
+}
+
+.admin-screen__item:hover {
+    background: var(--color-surface-alt);
+}
+
+.admin-screen__who {
+    display: flex;
+    gap: var(--space-3);
+    align-items: center;
+    min-width: 0;
+}
+
+.admin-screen__avatar {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary);
+    background: var(--color-primary-soft);
+    border-radius: 50%;
+}
+
+.admin-screen__avatar--lg {
+    width: 4rem;
+    height: 4rem;
+    font-size: var(--font-size-xl);
+}
+
+.admin-screen__link {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    overflow-wrap: anywhere;
+}
+
+/* The whole row opens the user. */
+.admin-screen__link::after {
+    position: absolute;
+    inset: 0;
+    content: '';
+}
+
+.admin-screen__cell {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+/* Detail hero and form cards */
+.admin-screen__hero {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-5);
+    align-items: center;
+    padding: var(--space-5);
+    background: var(--color-primary-soft);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.admin-screen__hero-main {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.admin-screen__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
 .admin-screen__panel {
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
     max-width: var(--form-max-width);
-    padding: var(--space-4);
+    padding: var(--space-5);
     background: var(--color-surface);
     border: var(--border-width) solid var(--color-border);
-    border-radius: var(--radius-md);
-}
-
-.admin-screen__filters {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    gap: var(--space-4);
+    border-radius: var(--radius-lg);
 }
 
 .admin-screen__info {
     display: grid;
     grid-template-columns: max-content 1fr;
-    gap: var(--space-2) var(--space-5);
+    gap: var(--space-3) var(--space-5);
 }
 
 .admin-screen__info dt {
     color: var(--color-text-muted);
 }
 
+.admin-screen__info dd {
+    margin: 0;
+}
+
+.admin-screen__section-title {
+    font-size: var(--font-size-md);
+    color: var(--color-primary);
+}
+
+/* Log table */
 .admin-screen__table-wrap {
     overflow-x: auto;
     background: var(--color-surface);
     border: var(--border-width) solid var(--color-border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
 }
 
 .admin-screen__table {
@@ -64,12 +224,21 @@
 .admin-screen__table td {
     padding: var(--space-3) var(--space-4);
     text-align: left;
-    vertical-align: top;
+    vertical-align: middle;
     border-bottom: var(--border-width) solid var(--color-border);
 }
 
 .admin-screen__table th {
     font-size: var(--font-size-sm);
+    white-space: nowrap;
+    background: var(--color-surface-alt);
+}
+
+.admin-screen__table tbody tr {
+    transition: background-color var(--transition-fast);
+}
+
+.admin-screen__table tbody tr:hover {
     background: var(--color-surface-alt);
 }
 
@@ -77,28 +246,79 @@
     border-bottom: 0;
 }
 
-.admin-screen__muted {
-    color: var(--color-text-muted);
+.admin-screen__time {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
+/* Guidance steps (SC-06-03) */
 .admin-screen__steps {
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
-    max-width: var(--form-max-width);
-    padding-left: var(--space-5);
+    gap: var(--space-3);
+    padding: 0;
+    list-style: none;
+    counter-reset: step;
 }
 
-.admin-screen__steps li {
+.admin-screen__step {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
-    padding: var(--space-4);
+    padding: var(--space-4) var(--space-5) var(--space-4)
+        calc(var(--space-5) + 2.5rem + var(--space-4));
     background: var(--color-surface);
     border: var(--border-width) solid var(--color-border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
+    counter-increment: step;
 }
 
-.admin-screen__steps h2 {
+.admin-screen__step::before {
+    position: absolute;
+    top: var(--space-4);
+    left: var(--space-5);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary);
+    content: counter(step);
+    background: var(--color-primary-soft);
+    border-radius: 50%;
+}
+
+.admin-screen__step h2 {
     font-size: var(--font-size-md);
+}
+
+.admin-screen__step .text-link {
+    align-self: flex-start;
+}
+
+@media (max-width: 800px) {
+    .admin-screen__item,
+    .admin-screen__item--draft {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-2);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-screen__item,
+    .admin-screen__table tbody tr {
+        transition: none;
+    }
+}
+
+.admin-screen__link-plain {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    overflow-wrap: anywhere;
+}
+
+.admin-screen__badges {
+    align-items: center;
 }

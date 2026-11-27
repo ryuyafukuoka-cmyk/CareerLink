@@ -9,15 +9,16 @@ import {
 } from '@shared/definitions';
 import { listUsers } from '@/api/users.js';
 import { listOperationLogs } from '@/api/operationLogs.js';
+import AnimatedNumber from '@/components/AnimatedNumber/AnimatedNumber.jsx';
+import Badge from '@/components/Badge/Badge.jsx';
 import Button from '@/components/Button/Button.jsx';
+import DatePicker from '@/components/DatePicker/DatePicker.jsx';
 import EmptyState from '@/components/EmptyState/EmptyState.jsx';
 import ErrorMessage from '@/components/ErrorMessage/ErrorMessage.jsx';
 import FormField from '@/components/FormField/FormField.jsx';
 import Loading from '@/components/Loading/Loading.jsx';
-import Notice from '@/components/Notice/Notice.jsx';
 import Pagination from '@/components/Pagination/Pagination.jsx';
 import Select from '@/components/Select/Select.jsx';
-import TextInput from '@/components/TextInput/TextInput.jsx';
 import { getMessage } from '@/messages';
 import { formatDateTime, isRealDate } from '@/utils/date.js';
 import './AdminScreens.css';
@@ -128,10 +129,18 @@ function OperationLogScreen() {
 
             <form className="admin-screen__filters" onSubmit={handleSubmit} noValidate>
                 <FormField label="期間（開始）" error={errorText('from')}>
-                    <TextInput placeholder="YYYY/MM/DD" value={form.from} onChange={set('from')} />
+                    <DatePicker
+                        value={form.from}
+                        max={form.to || undefined}
+                        onChange={(value) => setForm((current) => ({ ...current, from: value }))}
+                    />
                 </FormField>
                 <FormField label="期間（終了）" error={errorText('to')}>
-                    <TextInput placeholder="YYYY/MM/DD" value={form.to} onChange={set('to')} />
+                    <DatePicker
+                        value={form.to}
+                        min={form.from || undefined}
+                        onChange={(value) => setForm((current) => ({ ...current, to: value }))}
+                    />
                 </FormField>
                 <FormField label="操作者">
                     <Select
@@ -158,7 +167,9 @@ function OperationLogScreen() {
                     />
                 </FormField>
                 <div className="admin-screen__actions">
-                    <Button type="submit">検索</Button>
+                    <Button type="submit" loading={loading} loadingText="検索中…">
+                        検索
+                    </Button>
                     <Button variant="secondary" onClick={handleClear}>
                         条件をクリア
                     </Button>
@@ -170,7 +181,13 @@ function OperationLogScreen() {
             {data && data.totalCount === 0 && <EmptyState message={getMessage('N-006')} />}
             {data && data.totalCount > 0 && (
                 <>
-                    <Notice message={`${data.totalCount}件の操作履歴が見つかりました。`} />
+                    <p className="admin-screen__count" role="status">
+                        <AnimatedNumber
+                            className="admin-screen__count-value"
+                            value={data.totalCount}
+                        />
+                        件
+                    </p>
                     <div className="admin-screen__table-wrap">
                         <table className="admin-screen__table">
                             <thead>
@@ -185,7 +202,9 @@ function OperationLogScreen() {
                             <tbody>
                                 {data.items.map((log) => (
                                     <tr key={log.logId}>
-                                        <td>{formatDateTime(log.operatedAt)}</td>
+                                        <td className="admin-screen__time">
+                                            {formatDateTime(log.operatedAt)}
+                                        </td>
                                         <td>{log.operatorName || '—'}</td>
                                         <td>
                                             {OPERATION_TYPE_LABELS[log.operationType] ??
@@ -196,7 +215,16 @@ function OperationLogScreen() {
                                                 log.targetType}
                                             {log.targetId ? `（ID: ${log.targetId}）` : ''}
                                         </td>
-                                        <td>{OPERATION_RESULT_LABELS[log.result] ?? log.result}</td>
+                                        <td>
+                                            <Badge
+                                                size="sm"
+                                                tone={
+                                                    log.result === 'success' ? 'success' : 'danger'
+                                                }
+                                            >
+                                                {OPERATION_RESULT_LABELS[log.result] ?? log.result}
+                                            </Badge>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>

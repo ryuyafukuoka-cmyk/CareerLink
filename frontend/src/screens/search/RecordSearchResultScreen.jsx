@@ -1,17 +1,46 @@
 import { useEffect, useState } from 'react';
-import { Link, generatePath, useLocation, useSearchParams } from 'react-router-dom';
-import { ACTIVITY_TYPE_LABELS } from '@shared/definitions';
+import { SlidersHorizontal, X } from 'lucide-react';
+import { generatePath, useLocation, useSearchParams } from 'react-router-dom';
+import { ACTIVITY_TYPE_LABELS, getRegionName } from '@shared/definitions';
 import { searchActivityRecords } from '@/api/search.js';
+import AnimatedNumber from '@/components/AnimatedNumber/AnimatedNumber.jsx';
+import Badge from '@/components/Badge/Badge.jsx';
 import EmptyState from '@/components/EmptyState/EmptyState.jsx';
 import ErrorMessage from '@/components/ErrorMessage/ErrorMessage.jsx';
 import Loading from '@/components/Loading/Loading.jsx';
 import Pagination from '@/components/Pagination/Pagination.jsx';
+import TextLink from '@/components/TextLink/TextLink.jsx';
 import { getMessage } from '@/messages';
 import { PATHS } from '@/routes/paths.js';
 import { displayDate } from '../rounds/roundHelpers.js';
 import './RecordSearch.css';
 
-const typesText = (types) => types.map((type) => ACTIVITY_TYPE_LABELS[type]).join('、');
+const splitList = (text) => (text ? text.split(',').filter(Boolean) : []);
+
+// Applied conditions as removable chips. `remove` is the query param(s) a chip clears.
+function buildChips(params) {
+    const chips = [];
+    const add = (id, label, keys, value) => chips.push({ id, label, keys, value });
+    if (params.get('companyName'))
+        add('company', `企業「${params.get('companyName')}」`, ['companyName']);
+    if (params.get('graduationYear'))
+        add('year', `${params.get('graduationYear')}年度`, ['graduationYear']);
+    splitList(params.get('activityTypes')).forEach((type) =>
+        add(`type-${type}`, ACTIVITY_TYPE_LABELS[type] ?? type, ['activityTypes'], type),
+    );
+    const from = params.get('conductedFrom');
+    const to = params.get('conductedTo');
+    if (from || to)
+        add('period', `${from || '…'} 〜 ${to || '…'}`, ['conductedFrom', 'conductedTo']);
+    splitList(params.get('prefectures')).forEach((id) =>
+        add(`region-${id}`, getRegionName(id), ['prefectures'], id),
+    );
+    if (params.get('keyword')) {
+        const mode = params.get('matchMode') === 'exact' ? '（単語完全一致）' : '';
+        add('keyword', `「${params.get('keyword')}」${mode}`, ['keyword', 'matchMode']);
+    }
+    return chips;
+}
 
 // SC-03-02 Search results. The conditions and the page are in the URL (set by SC-03-01), so
 // going to a record and coming back keeps both. Only summaries are shown: no names, no excerpts.
@@ -46,15 +75,64 @@ function RecordSearchResultScreen() {
     const conditionQuery = conditionParams.toString();
     const changePath = `${PATHS.search}${conditionQuery ? `?${conditionQuery}` : ''}`;
 
+    // Removing a chip searches again right away; the page goes back to 1.
+    function removeChip(chip) {
+        const params = new URLSearchParams(searchParams);
+        params.delete('page');
+        if (chip.value !== undefined) {
+            const rest = splitList(params.get(chip.keys[0])).filter((v) => v !== chip.value);
+            if (rest.length > 0) params.set(chip.keys[0], rest.join(','));
+            else params.delete(chip.keys[0]);
+        } else {
+            chip.keys.forEach((key) => params.delete(key));
+        }
+        setSearchParams(params);
+    }
+
+    const chips = buildChips(searchParams);
     const loading = result.key !== requestKey;
     const { data, error } = loading ? { data: null, error: null } : result;
 
     return (
         <main className="record-search">
-            <div className="record-search__header">
+            <div className="record-search__top">
                 <h1>検索結果</h1>
-                <Link to={changePath}>条件を変更する</Link>
+                <TextLink to={changePath} className="record-search__change">
+                    <SlidersHorizontal size={16} aria-hidden="true" />
+                    条件を変更する
+                </TextLink>
             </div>
+
+            {(data || chips.length > 0) && (
+                <div className="record-search__summary">
+                    {data && (
+                        <p className="record-search__count" role="status">
+                            <AnimatedNumber
+                                className="record-search__count-value"
+                                value={data.totalCount}
+                            />
+                            件
+                        </p>
+                    )}
+                    {chips.length > 0 && (
+                        <ul className="record-search__chips" aria-label="検索中の条件">
+                            {chips.map((chip) => (
+                                <li key={chip.id}>
+                                    <button
+                                        type="button"
+                                        className="record-search__chip"
+                                        onClick={() => removeChip(chip)}
+                                        aria-label={`${chip.label}の条件を外す`}
+                                    >
+                                        {chip.label}
+                                        <X size={14} aria-hidden="true" />
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+            )}
 
             {loading && <Loading />}
             {error && (
@@ -66,40 +144,36 @@ function RecordSearchResultScreen() {
             {data && data.items.length === 0 && <EmptyState message={getMessage('N-003')} />}
             {data && data.items.length > 0 && (
                 <>
-                    <p className="record-search__count">
-                        {data.totalCount}件の記録が見つかりました。
-                    </p>
-                    <div className="record-search__table-wrap">
-                        <table className="record-search__table">
-                            <thead>
-                                <tr>
-                                    <th scope="col">企業名</th>
-                                    <th scope="col">活動種別</th>
-                                    <th scope="col">実施日</th>
-                                    <th scope="col">卒業年度</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {data.items.map((item) => (
-                                    <tr key={item.recordId}>
-                                        <td>
-                                            <Link
-                                                to={generatePath(PATHS.searchRecordDetail, {
-                                                    recordId: item.recordId,
-                                                })}
-                                                state={{ backTo: `${pathname}${search}` }}
-                                            >
-                                                {item.companyName}
-                                            </Link>
-                                        </td>
-                                        <td>{typesText(item.activityTypes)}</td>
-                                        <td>{displayDate(item.conductedOn)}</td>
-                                        <td>{item.graduationYear}年度</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    <ul className="record-search__items">
+                        {data.items.map((item) => (
+                            <li key={item.recordId} className="record-search__item">
+                                <TextLink
+                                    className="record-search__link"
+                                    to={generatePath(PATHS.searchRecordDetail, {
+                                        recordId: item.recordId,
+                                    })}
+                                    state={{ backTo: `${pathname}${search}` }}
+                                >
+                                    {item.companyName}
+                                </TextLink>
+                                <ul className="record-search__types" aria-label="活動種別">
+                                    {item.activityTypes.map((type) => (
+                                        <li key={type}>
+                                            <Badge size="sm" tone="primary">
+                                                {ACTIVITY_TYPE_LABELS[type]}
+                                            </Badge>
+                                        </li>
+                                    ))}
+                                </ul>
+                                <span className="record-search__meta">
+                                    {displayDate(item.conductedOn)}
+                                </span>
+                                <span className="record-search__meta">
+                                    {item.graduationYear}年度
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
                     <Pagination
                         page={data.page}
                         totalCount={data.totalCount}

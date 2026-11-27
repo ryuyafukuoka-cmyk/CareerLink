@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, generatePath, useNavigate, useParams } from 'react-router-dom';
+import { generatePath, useNavigate, useParams } from 'react-router-dom';
 import { ROLES } from '@shared/definitions';
 import { updateGraduationYear } from '@/api/users.js';
 import Button from '@/components/Button/Button.jsx';
@@ -7,6 +7,7 @@ import ErrorMessage from '@/components/ErrorMessage/ErrorMessage.jsx';
 import FormField from '@/components/FormField/FormField.jsx';
 import Loading from '@/components/Loading/Loading.jsx';
 import TextInput from '@/components/TextInput/TextInput.jsx';
+import TextLink from '@/components/TextLink/TextLink.jsx';
 import { getErrorMessage, getMessage } from '@/messages';
 import { PATHS } from '@/routes/paths.js';
 import { useTargetUser } from './useTargetUser.js';
@@ -46,7 +47,7 @@ function UserGraduationYearScreen() {
         return (
             <main className="admin-screen">
                 <ErrorMessage error={error} onRetry={error.status === 404 ? undefined : reload} />
-                <Link to={PATHS.adminUsers}>ユーザ一覧へ戻る</Link>
+                <TextLink to={PATHS.adminUsers}>ユーザ一覧へ戻る</TextLink>
             </main>
         );
     }
@@ -54,7 +55,7 @@ function UserGraduationYearScreen() {
         return (
             <main className="admin-screen">
                 <ErrorMessage message={getMessage('E-004')} />
-                <Link to={detailPath}>ユーザ詳細へ戻る</Link>
+                <TextLink to={detailPath}>ユーザ詳細へ戻る</TextLink>
             </main>
         );
     }
@@ -86,8 +87,12 @@ function UserGraduationYearScreen() {
 
     return (
         <main className="admin-screen">
-            <Link to={detailPath}>← {user.displayName}</Link>
-            <h1>卒業年度の変更</h1>
+            <header className="admin-screen__header">
+                <div>
+                    <h1>卒業年度の変更</h1>
+                    <p className="admin-screen__lead">{user.displayName}さん</p>
+                </div>
+            </header>
 
             <form className="admin-screen__panel" onSubmit={handleSubmit} noValidate>
                 {formError && <ErrorMessage message={formError} />}

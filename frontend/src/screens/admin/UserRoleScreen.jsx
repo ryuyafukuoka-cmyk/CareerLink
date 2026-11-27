@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Link, generatePath, useNavigate, useParams } from 'react-router-dom';
+import { generatePath, useNavigate, useParams } from 'react-router-dom';
 import { ROLE_LABELS, ROLES, USER_STATUSES } from '@shared/definitions';
 import { changeUserRole, listUsers } from '@/api/users.js';
 import { useAuth } from '@/auth/useAuth.js';
+import { RoleBadge } from '@/components/Badge/Badge.jsx';
 import Button from '@/components/Button/Button.jsx';
 import ConfirmDialog from '@/components/ConfirmDialog/ConfirmDialog.jsx';
 import ErrorMessage from '@/components/ErrorMessage/ErrorMessage.jsx';
 import FormField from '@/components/FormField/FormField.jsx';
 import Loading from '@/components/Loading/Loading.jsx';
-import Select from '@/components/Select/Select.jsx';
+import RadioGroup from '@/components/RadioGroup/RadioGroup.jsx';
+import TextLink from '@/components/TextLink/TextLink.jsx';
 import { getErrorMessage, getMessage } from '@/messages';
 import { PATHS } from '@/routes/paths.js';
 import { useTargetUser } from './useTargetUser.js';
@@ -46,7 +48,7 @@ function UserRoleScreen() {
         return (
             <main className="admin-screen">
                 <ErrorMessage error={error} onRetry={error.status === 404 ? undefined : reload} />
-                <Link to={PATHS.adminUsers}>ユーザ一覧へ戻る</Link>
+                <TextLink to={PATHS.adminUsers}>ユーザ一覧へ戻る</TextLink>
             </main>
         );
     }
@@ -55,7 +57,7 @@ function UserRoleScreen() {
             <main className="admin-screen">
                 <ErrorMessage message={getMessage('E-003')} />
                 <p className="admin-screen__muted">自分自身のロールは変更できません。</p>
-                <Link to={detailPath}>ユーザ詳細へ戻る</Link>
+                <TextLink to={detailPath}>ユーザ詳細へ戻る</TextLink>
             </main>
         );
     }
@@ -81,18 +83,24 @@ function UserRoleScreen() {
 
     return (
         <main className="admin-screen">
-            <Link to={detailPath}>← {user.displayName}</Link>
-            <h1>ロールの変更</h1>
+            <header className="admin-screen__header">
+                <div>
+                    <h1>ロールの変更</h1>
+                    <p className="admin-screen__lead">{user.displayName}さん</p>
+                </div>
+            </header>
 
             <div className="admin-screen__panel">
-                <p>
-                    {user.displayName}さんの現在のロール：<strong>{ROLE_LABELS[user.role]}</strong>
+                <p className="admin-screen__badges">
+                    現在のロール：
+                    <RoleBadge role={user.role} />
                 </p>
-                <FormField label="新しいロール">
-                    <Select
+                <FormField group label="新しいロール">
+                    <RadioGroup
+                        variant="card"
                         options={ROLE_OPTIONS}
                         value={selected}
-                        onChange={(event) => setNewRole(event.target.value)}
+                        onChange={setNewRole}
                     />
                 </FormField>
                 {demotesLastAdmin && <ErrorMessage message={getMessage('E-217')} />}

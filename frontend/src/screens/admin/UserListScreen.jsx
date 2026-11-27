@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Link, generatePath, useSearchParams } from 'react-router-dom';
+import { generatePath, useSearchParams } from 'react-router-dom';
 import { ROLE_LABELS, ROLES, USER_STATUS_LABELS } from '@shared/definitions';
 import { listUsers } from '@/api/users.js';
+import AnimatedNumber from '@/components/AnimatedNumber/AnimatedNumber.jsx';
+import { RoleBadge, UserStatusBadge } from '@/components/Badge/Badge.jsx';
 import Button from '@/components/Button/Button.jsx';
 import EmptyState from '@/components/EmptyState/EmptyState.jsx';
 import ErrorMessage from '@/components/ErrorMessage/ErrorMessage.jsx';
 import FormField from '@/components/FormField/FormField.jsx';
 import Loading from '@/components/Loading/Loading.jsx';
-import Notice from '@/components/Notice/Notice.jsx';
 import Select from '@/components/Select/Select.jsx';
+import TextLink from '@/components/TextLink/TextLink.jsx';
 import { getMessage } from '@/messages';
 import { PATHS } from '@/routes/paths.js';
 import './AdminScreens.css';
@@ -117,7 +119,9 @@ function UserListScreen() {
                     />
                 </FormField>
                 <div className="admin-screen__actions">
-                    <Button type="submit">検索</Button>
+                    <Button type="submit" loading={loading} loadingText="検索中…">
+                        検索
+                    </Button>
                     <Button variant="secondary" onClick={handleClear}>
                         条件をクリア
                     </Button>
@@ -129,41 +133,38 @@ function UserListScreen() {
             {data && data.length === 0 && <EmptyState message={getMessage('N-006')} />}
             {data && data.length > 0 && (
                 <>
-                    <Notice message={`${data.length}件のユーザが見つかりました。`} />
-                    <div className="admin-screen__table-wrap">
-                        <table className="admin-screen__table">
-                            <thead>
-                                <tr>
-                                    <th scope="col">氏名</th>
-                                    <th scope="col">ロール</th>
-                                    <th scope="col">利用状態</th>
-                                    <th scope="col">卒業年度</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {data.map((user) => (
-                                    <tr key={user.userId}>
-                                        <td>
-                                            <Link
-                                                to={generatePath(PATHS.adminUserDetail, {
-                                                    userId: user.userId,
-                                                })}
-                                            >
-                                                {user.displayName}
-                                            </Link>
-                                        </td>
-                                        <td>{ROLE_LABELS[user.role]}</td>
-                                        <td>{USER_STATUS_LABELS[user.status]}</td>
-                                        <td>
-                                            {user.graduationYear
-                                                ? `${user.graduationYear}年度`
-                                                : '—'}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    <p className="admin-screen__count" role="status">
+                        <AnimatedNumber className="admin-screen__count-value" value={data.length} />
+                        人
+                    </p>
+                    <ul className="admin-screen__items">
+                        {data.map((user) => (
+                            <li key={user.userId} className="admin-screen__item">
+                                <div className="admin-screen__who">
+                                    <span className="admin-screen__avatar" aria-hidden="true">
+                                        {user.displayName.slice(0, 1)}
+                                    </span>
+                                    <TextLink
+                                        className="admin-screen__link"
+                                        to={generatePath(PATHS.adminUserDetail, {
+                                            userId: user.userId,
+                                        })}
+                                    >
+                                        {user.displayName}
+                                    </TextLink>
+                                </div>
+                                <div>
+                                    <RoleBadge role={user.role} size="sm" />
+                                </div>
+                                <div>
+                                    <UserStatusBadge status={user.status} size="sm" />
+                                </div>
+                                <span className="admin-screen__cell">
+                                    {user.graduationYear ? `${user.graduationYear}年度` : '—'}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
                 </>
             )}
         </main>
