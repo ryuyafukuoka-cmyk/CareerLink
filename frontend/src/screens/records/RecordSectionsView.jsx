@@ -1,5 +1,6 @@
 import { Fragment } from 'react';
 import { getSectionDefinitions } from '@shared/definitions';
+import Badge from '@/components/Badge/Badge.jsx';
 import './RecordScreens.css';
 
 const EMPTY = '—';
@@ -15,14 +16,24 @@ function QuestionsView({ questions }) {
                 // Questions have no ID of their own; the list never reorders on this screen.
                 <li key={index} className="record-view__question">
                     {question.category && (
-                        <p className="record-view__category">{question.category}</p>
+                        <p>
+                            <Badge size="sm" tone="primary">
+                                {question.category}
+                            </Badge>
+                        </p>
                     )}
-                    <p className="record-view__text">質問：{show(question.content)}</p>
-                    <p className="record-view__text">回答：{show(question.answer)}</p>
+                    <p className="record-view__question-text">
+                        <span className="visually-hidden">質問：</span>
+                        {show(question.content)}
+                    </p>
+                    <p className="record-view__text">
+                        <span className="record-view__label">回答</span>
+                        {show(question.answer)}
+                    </p>
                     {Array.isArray(question.followUps) && question.followUps.length > 0 && (
-                        <ul className="record-view__followups">
+                        <ul className="record-view__followups" aria-label="深掘り質問">
                             {question.followUps.map((followUp, followIndex) => (
-                                <li key={followIndex}>深掘り：{followUp}</li>
+                                <li key={followIndex}>{followUp}</li>
                             ))}
                         </ul>
                     )}
@@ -43,7 +54,7 @@ function RecordSectionsView({ activityTypes, sections }) {
                 const values = sections?.[definition.type] ?? {};
                 return (
                     <section key={definition.type} className="record-view">
-                        <h3>{definition.label}</h3>
+                        <h2>{definition.label}</h2>
                         <dl className="record-view__fields">
                             {definition.fields.map((field) => (
                                 <Fragment key={field.name}>

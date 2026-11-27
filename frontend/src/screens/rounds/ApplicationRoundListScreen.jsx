@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link, generatePath, useSearchParams } from 'react-router-dom';
-import { ROLES, STAGE_LABELS } from '@shared/definitions';
+import { Pencil, Plus } from 'lucide-react';
+import { generatePath, useSearchParams } from 'react-router-dom';
+import { ROLES } from '@shared/definitions';
 import { listCompanyOptions } from '@/api/companies.js';
 import { listApplicationRounds } from '@/api/rounds.js';
 import { listUsers } from '@/api/users.js';
@@ -11,6 +12,8 @@ import ErrorMessage from '@/components/ErrorMessage/ErrorMessage.jsx';
 import FormField from '@/components/FormField/FormField.jsx';
 import Loading from '@/components/Loading/Loading.jsx';
 import Select from '@/components/Select/Select.jsx';
+import StageTracker from '@/components/StageTracker/StageTracker.jsx';
+import TextLink from '@/components/TextLink/TextLink.jsx';
 import { toast } from '@/components/Toast/toast.js';
 import { useOverlay, useOverlayResult } from '@/hooks/useOverlay.js';
 import { getMessage } from '@/messages';
@@ -91,8 +94,10 @@ function ApplicationRoundListScreen() {
                 <h1>応募企業・選考進捗</h1>
                 {canWrite && (
                     <Button
+                        className="round-screen__new"
                         onClick={() => createForm.open(studentUserId ? { studentUserId } : null)}
                     >
+                        <Plus size={18} aria-hidden="true" />
                         応募回を登録する
                     </Button>
                 )}
@@ -116,64 +121,57 @@ function ApplicationRoundListScreen() {
             {data && groups.length === 0 && <EmptyState message={getMessage('N-006')} />}
 
             {groups.map(({ companyId, rounds }) => (
-                <section key={companyId} className="round-screen__group">
-                    <h2>
-                        <Link to={generatePath(PATHS.companyDetail, { companyId })}>
+                <section key={companyId} className="round-card">
+                    <h2 className="round-card__company">
+                        <TextLink to={generatePath(PATHS.companyDetail, { companyId })}>
                             {companyNames.get(companyId) ?? `企業ID ${companyId}`}
-                        </Link>
+                        </TextLink>
                     </h2>
-                    <div className="round-screen__table-wrap">
-                        <table className="round-screen__table">
-                            <thead>
-                                <tr>
-                                    {isStaff && <th scope="col">学生</th>}
-                                    <th scope="col">応募回</th>
-                                    <th scope="col">応募日</th>
-                                    <th scope="col">選考段階</th>
-                                    <th scope="col">操作</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {rounds.map((round) => {
-                                    const params = { roundId: round.applicationRoundId };
-                                    return (
-                                        <tr key={round.applicationRoundId}>
-                                            {isStaff && (
-                                                <td>
-                                                    {studentNames.get(round.studentUserId) ??
-                                                        `ID ${round.studentUserId}`}
-                                                </td>
-                                            )}
-                                            <td>第{numbers.get(round.applicationRoundId)}回</td>
-                                            <td>{displayDate(round.applicationDate)}</td>
-                                            <td>{STAGE_LABELS[round.stage]}</td>
-                                            <td className="round-screen__links">
-                                                <Link to={generatePath(PATHS.roundDetail, params)}>
-                                                    活動記録・履歴
-                                                </Link>
-                                                {canWrite && (
-                                                    <button
-                                                        type="button"
-                                                        className="round-screen__link"
-                                                        onClick={() =>
-                                                            editForm.open({
-                                                                round,
-                                                                companyName:
-                                                                    companyNames.get(companyId) ??
-                                                                    null,
-                                                            })
-                                                        }
-                                                    >
-                                                        進捗を編集
-                                                    </button>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                    <ul className="round-card__rounds">
+                        {rounds.map((round) => {
+                            const params = { roundId: round.applicationRoundId };
+                            return (
+                                <li key={round.applicationRoundId} className="round-row">
+                                    <div className="round-row__who">
+                                        <p className="round-row__number">
+                                            第{numbers.get(round.applicationRoundId)}回
+                                        </p>
+                                        {isStaff && (
+                                            <p>
+                                                {studentNames.get(round.studentUserId) ??
+                                                    `ID ${round.studentUserId}`}
+                                            </p>
+                                        )}
+                                        <p className="round-row__date">
+                                            応募日 {displayDate(round.applicationDate)}
+                                        </p>
+                                    </div>
+                                    <StageTracker stage={round.stage} />
+                                    <div className="round-row__actions">
+                                        <TextLink to={generatePath(PATHS.roundDetail, params)}>
+                                            活動記録・履歴
+                                        </TextLink>
+                                        {canWrite && (
+                                            <Button
+                                                variant="secondary"
+                                                className="round-row__edit"
+                                                onClick={() =>
+                                                    editForm.open({
+                                                        round,
+                                                        companyName:
+                                                            companyNames.get(companyId) ?? null,
+                                                    })
+                                                }
+                                            >
+                                                <Pencil size={14} aria-hidden="true" />
+                                                進捗を編集
+                                            </Button>
+                                        )}
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </ul>
                 </section>
             ))}
 

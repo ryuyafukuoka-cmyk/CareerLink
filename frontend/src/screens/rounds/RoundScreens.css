@@ -143,3 +143,146 @@
 .round-form__company {
     font-weight: var(--font-weight-bold);
 }
+
+/* Buttons with an icon */
+.round-screen__new,
+.round-row__edit {
+    display: inline-flex;
+    gap: var(--space-2);
+    align-items: center;
+}
+
+/* Round list (SC-02-04): one card per company, one row per round */
+.round-card {
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.round-card__company {
+    padding: var(--space-4) var(--space-5);
+    font-size: var(--font-size-lg);
+    overflow-wrap: anywhere;
+}
+
+.round-card__rounds {
+    padding: 0;
+    list-style: none;
+}
+
+.round-row {
+    display: grid;
+    grid-template-columns: 11rem minmax(0, 1fr) max-content;
+    gap: var(--space-5);
+    align-items: center;
+    padding: var(--space-4) var(--space-5);
+    border-top: var(--border-width) solid var(--color-border);
+}
+
+.round-row__number {
+    font-weight: var(--font-weight-bold);
+}
+
+.round-row__date,
+.round-hero__meta {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.round-row__actions {
+    display: flex;
+    gap: var(--space-4);
+    align-items: center;
+}
+
+/* Round detail (SC-02-05) */
+.round-hero {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    padding: var(--space-6);
+    background: var(--color-primary-soft);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.round-hero__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+}
+
+.round-hero__note dt {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.round-hero__note dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.round-records {
+    padding: 0;
+    list-style: none;
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.round-records__item {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
+    align-items: center;
+    padding: var(--space-3) var(--space-5);
+}
+
+.round-records__item + .round-records__item {
+    border-top: var(--border-width) solid var(--color-border);
+}
+
+.round-records__types {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+}
+
+/* Edit history, newest first (also used by the record detail) */
+.timeline {
+    padding: 0;
+    list-style: none;
+}
+
+.timeline li {
+    position: relative;
+    padding: 0 0 var(--space-3) var(--space-5);
+}
+
+.timeline li::before {
+    position: absolute;
+    top: 0.5em;
+    left: 0;
+    width: 9px;
+    height: 9px;
+    content: '';
+    background: var(--color-primary);
+    border-radius: 50%;
+}
+
+.timeline li:not(:last-child)::after {
+    position: absolute;
+    top: calc(0.5em + 9px);
+    bottom: -0.5em;
+    left: 4px;
+    content: '';
+    border-left: 1px solid var(--color-border-strong);
+}
+
+@media (max-width: 800px) {
+    .round-row {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-3);
+    }
+}

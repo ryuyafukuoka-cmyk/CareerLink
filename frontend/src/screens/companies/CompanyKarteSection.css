@@ -1,3 +1,4 @@
+/* Karte part of SC-04-02. */
 .company-karte {
     display: flex;
     flex-direction: column;
@@ -10,26 +11,14 @@
     gap: var(--space-4);
 }
 
-.company-karte__tabs {
+.company-karte__filters .form-field {
+    min-width: 12rem;
+}
+
+.company-karte__panel {
     display: flex;
-    gap: var(--space-2);
-    border-bottom: var(--border-width) solid var(--color-border);
-}
-
-.company-karte__tab {
-    padding: var(--space-2) var(--space-4);
-    font: inherit;
-    color: var(--color-text-muted);
-    cursor: pointer;
-    background: none;
-    border: 0;
-    border-bottom: 3px solid transparent;
-}
-
-.company-karte__tab--current {
-    font-weight: bold;
-    color: var(--color-primary);
-    border-bottom-color: var(--color-primary);
+    flex-direction: column;
+    gap: var(--space-4);
 }
 
 .company-karte__note,
@@ -38,30 +27,134 @@
     color: var(--color-text-muted);
 }
 
-.company-karte__year {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-}
-
 .company-karte__list {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
     padding: 0;
     list-style: none;
+}
+
+/* Records: the graduation year stands beside its records and stays in view while they scroll. */
+.company-karte__year {
+    display: grid;
+    grid-template-columns: 7rem minmax(0, 1fr);
+    gap: var(--space-4);
+    align-items: start;
+}
+
+.company-karte__year-title {
+    position: sticky;
+    top: calc(var(--header-height) + var(--space-3));
+    padding-top: var(--space-3);
+}
+
+.company-karte__year .company-karte__list {
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.company-karte__record {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
+    align-items: center;
+    padding: var(--space-3) var(--space-4);
+}
+
+.company-karte__record + .company-karte__record {
+    border-top: var(--border-width) solid var(--color-border);
+}
+
+.company-karte__types {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+}
+
+/* Interview questions and exams */
+.company-karte__cards {
+    gap: var(--space-3);
 }
 
 .company-karte__item {
     display: flex;
     flex-direction: column;
-    gap: var(--space-1);
-    padding: var(--space-3) var(--space-4);
+    gap: var(--space-2);
+    padding: var(--space-4) var(--space-5);
     background: var(--color-surface);
     border: var(--border-width) solid var(--color-border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
 }
 
+.company-karte__question {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    overflow-wrap: anywhere;
+}
+
+/* Follow-up questions branch off the question, like the side menu. */
 .company-karte__followups {
-    padding-left: var(--space-4);
+    padding: 0 0 0 var(--space-3);
+    list-style: none;
+}
+
+.company-karte__followups li {
+    position: relative;
+    padding: var(--space-1) 0 var(--space-1) var(--space-5);
+    overflow-wrap: anywhere;
+}
+
+.company-karte__followups li::before,
+.company-karte__followups li:not(:last-child)::after {
+    position: absolute;
+    left: 0;
+    content: '';
+    border-left: 2px solid var(--color-border-strong);
+}
+
+.company-karte__followups li::before {
+    top: 0;
+    width: var(--space-3);
+    height: 1.05rem;
+    border-bottom: 2px solid var(--color-border-strong);
+    border-bottom-left-radius: var(--radius-md);
+}
+
+.company-karte__followups li:not(:last-child)::after {
+    top: 0;
+    bottom: 0;
+}
+
+.company-karte__exam {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: var(--space-1) var(--space-4);
+}
+
+.company-karte__exam dt {
+    color: var(--color-text-muted);
+}
+
+.company-karte__exam dd {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.company-karte__footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    justify-content: space-between;
+}
+
+@media (max-width: 800px) {
+    .company-karte__year {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-2);
+    }
+
+    .company-karte__year-title {
+        position: static;
+    }
 }

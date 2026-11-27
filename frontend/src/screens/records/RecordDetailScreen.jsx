@@ -1,26 +1,19 @@
 import { useEffect, useState } from 'react';
-import {
-    Link,
-    generatePath,
-    useLocation,
-    useMatch,
-    useNavigate,
-    useParams,
-} from 'react-router-dom';
-import {
-    ACTIVITY_TYPE_LABELS,
-    RECORD_STATUSES,
-    RECORD_STATUS_LABELS,
-    ROLES,
-} from '@shared/definitions';
+import { Pencil, Trash2 } from 'lucide-react';
+import { generatePath, useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
+import { ACTIVITY_TYPE_LABELS, RECORD_STATUSES, ROLES } from '@shared/definitions';
 import { deleteActivityRecord, getDeleteConfirmInfo, getRecordDetail } from '@/api/records.js';
 import { useAuth } from '@/auth/useAuth.js';
+import { usePageTitle } from '@/components/AppLayout/BreadcrumbContext.js';
+import Badge from '@/components/Badge/Badge.jsx';
 import Button from '@/components/Button/Button.jsx';
 import ConfirmDialog from '@/components/ConfirmDialog/ConfirmDialog.jsx';
 import EmptyState from '@/components/EmptyState/EmptyState.jsx';
 import ErrorMessage from '@/components/ErrorMessage/ErrorMessage.jsx';
 import Loading from '@/components/Loading/Loading.jsx';
 import Notice from '@/components/Notice/Notice.jsx';
+import StatusMark from '@/components/StatusMark/StatusMark.jsx';
+import TextLink from '@/components/TextLink/TextLink.jsx';
 import { getMessage } from '@/messages';
 import { PATHS } from '@/routes/paths.js';
 import { formatDateTime } from '@/utils/date.js';
@@ -60,8 +53,11 @@ function RecordDetailScreen() {
     }, [recordId, requestKey]);
 
     // From search: go back to the same results (conditions and page) when the link passed them.
+    // On success the breadcrumb does this; the link below is for the error view.
     const backPath = fromSearch ? (state?.backTo ?? PATHS.searchResults) : PATHS.records;
-    const backLabel = fromSearch ? '← 検索結果' : '← 活動記録一覧';
+    const backLabel = fromSearch ? '検索結果' : '活動記録一覧';
+
+    usePageTitle(result.data?.company.nameOfficial);
 
     if (result.key !== requestKey) return <Loading centered />;
 
@@ -74,7 +70,7 @@ function RecordDetailScreen() {
                     error={error}
                     onRetry={noRetry ? undefined : () => setReloadCount((n) => n + 1)}
                 />
-                <Link to={backPath}>{backLabel.replace('← ', '')}へ戻る</Link>
+                <TextLink to={backPath}>{backLabel}へ戻る</TextLink>
             </main>
         );
     }
@@ -115,97 +111,111 @@ function RecordDetailScreen() {
 
     return (
         <main className="round-screen">
-            <Link to={backPath}>{backLabel}</Link>
-
             {state?.noticeId && <Notice message={getMessage(state.noticeId)} />}
-            <p className="record-screen__notice-note">{getMessage('N-002')}</p>
 
-            <div className="round-screen__header">
-                <h1>
-                    <Link
-                        to={generatePath(PATHS.companyDetail, {
-                            companyId: record.company.companyId,
-                        })}
-                    >
-                        {record.company.nameOfficial}
-                    </Link>
-                </h1>
-                <div className="round-screen__links">
-                    {canEdit && (
-                        <Button
-                            variant="secondary"
-                            onClick={() => navigate(generatePath(PATHS.recordEdit, params))}
-                        >
-                            編集
-                        </Button>
-                    )}
-                    {canDelete && (
-                        <Button
-                            variant="danger"
-                            loading={preparingDelete}
-                            loadingText="確認中…"
-                            onClick={openDeleteDialog}
-                        >
-                            削除
-                        </Button>
-                    )}
+            <header className="record-hero">
+                <div className="record-hero__top">
+                    <div className="record-hero__title">
+                        <p className="record-hero__tags">
+                            {isDraft && <StatusMark status={record.status} size="sm" />}
+                            {record.activityTypes.map((type) => (
+                                <Badge key={type} size="sm" tone="primary">
+                                    {ACTIVITY_TYPE_LABELS[type]}
+                                </Badge>
+                            ))}
+                        </p>
+                        <h1>
+                            <TextLink
+                                to={generatePath(PATHS.companyDetail, {
+                                    companyId: record.company.companyId,
+                                })}
+                            >
+                                {record.company.nameOfficial}
+                            </TextLink>
+                        </h1>
+                    </div>
+                    <div className="record-hero__actions">
+                        {canEdit && (
+                            <Button
+                                variant="secondary"
+                                onClick={() => navigate(generatePath(PATHS.recordEdit, params))}
+                            >
+                                <Pencil size={16} aria-hidden="true" />
+                                編集
+                            </Button>
+                        )}
+                        {canDelete && (
+                            <Button
+                                variant="danger"
+                                loading={preparingDelete}
+                                loadingText="確認中…"
+                                onClick={openDeleteDialog}
+                            >
+                                <Trash2 size={16} aria-hidden="true" />
+                                削除
+                            </Button>
+                        )}
+                    </div>
                 </div>
-            </div>
+                <dl className="record-hero__facts">
+                    <div>
+                        <dt>実施日</dt>
+                        <dd>{displayDate(record.conductedOn)}</dd>
+                    </div>
+                    <div>
+                        <dt>卒業年度</dt>
+                        <dd>{record.graduationYear ? `${record.graduationYear}年度` : '—'}</dd>
+                    </div>
+                    {record.posterName && (
+                        <div>
+                            <dt>投稿者</dt>
+                            <dd>{record.posterName}</dd>
+                        </div>
+                    )}
+                </dl>
+            </header>
 
             {prepareError && <ErrorMessage error={prepareError} />}
 
-            <dl className="round-screen__info">
-                {isDraft && (
-                    <>
-                        <dt>状態</dt>
-                        <dd>
-                            <span className="record-screen__badge">
-                                {RECORD_STATUS_LABELS[record.status]}
-                            </span>
-                        </dd>
-                    </>
-                )}
-                <dt>活動種別</dt>
-                <dd>{record.activityTypes.map((type) => ACTIVITY_TYPE_LABELS[type]).join('、')}</dd>
-                <dt>実施日</dt>
-                <dd>{displayDate(record.conductedOn)}</dd>
-                <dt>卒業年度</dt>
-                <dd>{record.graduationYear ? `${record.graduationYear}年度` : '—'}</dd>
-                {record.posterName && (
-                    <>
-                        <dt>投稿者</dt>
-                        <dd>{record.posterName}</dd>
-                    </>
-                )}
-                <dt>登録日時</dt>
-                <dd>{formatDateTime(record.createdAt)}</dd>
-                <dt>最終更新日時</dt>
-                <dd>{formatDateTime(record.lastUpdatedAt)}</dd>
-                {record.lastEditorName && (
-                    <>
-                        <dt>最終更新者</dt>
-                        <dd>{record.lastEditorName}</dd>
-                    </>
-                )}
-            </dl>
+            <p className="record-screen__notice-note">{getMessage('N-002')}</p>
 
-            <RecordSectionsView activityTypes={record.activityTypes} sections={record.sections} />
+            <div className="record-layout">
+                <RecordSectionsView
+                    activityTypes={record.activityTypes}
+                    sections={record.sections}
+                />
 
-            <section className="record-screen__section">
-                <h2>更新履歴</h2>
-                {record.history.length === 0 ? (
-                    <EmptyState message={getMessage('N-006')} />
-                ) : (
-                    <ul className="round-screen__history">
-                        {record.history.map((item) => (
-                            <li key={item.editedAt}>
-                                {formatDateTime(item.editedAt)}
-                                {item.editorName && ` ${item.editorName}`}
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </section>
+                <aside className="record-aside">
+                    <dl className="record-aside__dates">
+                        <dt>登録日時</dt>
+                        <dd>{formatDateTime(record.createdAt)}</dd>
+                        <dt>最終更新日時</dt>
+                        <dd>{formatDateTime(record.lastUpdatedAt)}</dd>
+                        {record.lastEditorName && (
+                            <>
+                                <dt>最終更新者</dt>
+                                <dd>{record.lastEditorName}</dd>
+                            </>
+                        )}
+                    </dl>
+
+                    <section className="record-screen__section">
+                        <h2 className="record-aside__title">更新履歴</h2>
+                        {record.history.length === 0 ? (
+                            <EmptyState message={getMessage('N-006')} />
+                        ) : (
+                            <ul className="timeline">
+                                {record.history.map((item) => (
+                                    <li key={item.editedAt}>
+                                        {formatDateTime(item.editedAt)}
+                                        {item.editorName && ` ${item.editorName}`}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </section>
+                </aside>
+            </div>
 
             {deleteState && (
                 <ConfirmDialog

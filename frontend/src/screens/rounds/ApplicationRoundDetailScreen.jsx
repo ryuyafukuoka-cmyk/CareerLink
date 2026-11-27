@@ -1,19 +1,20 @@
 import { useEffect, useState } from 'react';
-import { Link, generatePath, useNavigate, useParams } from 'react-router-dom';
-import {
-    ACTIVITY_TYPE_LABELS,
-    RECORD_STATUS_LABELS,
-    ROLES,
-    STAGE_LABELS,
-} from '@shared/definitions';
+import { Pencil, Plus } from 'lucide-react';
+import { generatePath, useNavigate, useParams } from 'react-router-dom';
+import { ACTIVITY_TYPE_LABELS, ROLES } from '@shared/definitions';
 import { getCompany } from '@/api/companies.js';
 import { getApplicationRound, listRoundHistory, listRoundRecords } from '@/api/rounds.js';
 import { listUsers } from '@/api/users.js';
 import { useAuth } from '@/auth/useAuth.js';
+import { usePageTitle } from '@/components/AppLayout/BreadcrumbContext.js';
+import Badge from '@/components/Badge/Badge.jsx';
 import Button from '@/components/Button/Button.jsx';
 import EmptyState from '@/components/EmptyState/EmptyState.jsx';
 import ErrorMessage from '@/components/ErrorMessage/ErrorMessage.jsx';
 import Loading from '@/components/Loading/Loading.jsx';
+import StageTracker from '@/components/StageTracker/StageTracker.jsx';
+import StatusMark from '@/components/StatusMark/StatusMark.jsx';
+import TextLink from '@/components/TextLink/TextLink.jsx';
 import { toast } from '@/components/Toast/toast.js';
 import { useOverlay, useOverlayResult } from '@/hooks/useOverlay.js';
 import { getMessage } from '@/messages';
@@ -69,6 +70,8 @@ function ApplicationRoundDetailScreen() {
         };
     }, [roundId, isStaff, requestKey]);
 
+    usePageTitle(result.data?.company?.nameOfficial);
+
     // Keep showing the page while it is read again after a save, so the dialog can close smoothly.
     if (result.key === null) return <Loading centered />;
 
@@ -81,7 +84,7 @@ function ApplicationRoundDetailScreen() {
                     error={error}
                     onRetry={noRetry ? undefined : () => setReloadCount((n) => n + 1)}
                 />
-                <Link to={PATHS.rounds}>応募企業・選考進捗へ戻る</Link>
+                <TextLink to={PATHS.rounds}>応募企業・選考進捗へ戻る</TextLink>
             </main>
         );
     }
@@ -90,45 +93,48 @@ function ApplicationRoundDetailScreen() {
 
     return (
         <main className="round-screen">
-            <Link to={PATHS.rounds}>← 応募企業・選考進捗</Link>
-
-            <div className="round-screen__header">
-                <h1>
-                    {company ? (
-                        <Link
-                            to={generatePath(PATHS.companyDetail, { companyId: company.companyId })}
+            <header className="round-hero">
+                <div className="round-screen__header">
+                    <div>
+                        <h1>
+                            {company ? (
+                                <TextLink
+                                    to={generatePath(PATHS.companyDetail, {
+                                        companyId: company.companyId,
+                                    })}
+                                >
+                                    {company.nameOfficial}
+                                </TextLink>
+                            ) : (
+                                `企業ID ${round.companyId}`
+                            )}
+                        </h1>
+                        <p className="round-hero__meta">
+                            {studentName && <span>{studentName}</span>}
+                            <span>応募日 {displayDate(round.applicationDate)}</span>
+                        </p>
+                    </div>
+                    {canWrite && (
+                        <Button
+                            className="round-screen__new"
+                            onClick={() =>
+                                editForm.open({
+                                    round,
+                                    companyName: company?.nameOfficial ?? null,
+                                })
+                            }
                         >
-                            {company.nameOfficial}
-                        </Link>
-                    ) : (
-                        `企業ID ${round.companyId}`
+                            <Pencil size={16} aria-hidden="true" />
+                            選考進捗を編集
+                        </Button>
                     )}
-                </h1>
-                {canWrite && (
-                    <Button
-                        onClick={() =>
-                            editForm.open({ round, companyName: company?.nameOfficial ?? null })
-                        }
-                    >
-                        選考進捗を編集
-                    </Button>
-                )}
-            </div>
-
-            <dl className="round-screen__info">
-                {studentName && (
-                    <>
-                        <dt>学生</dt>
-                        <dd>{studentName}</dd>
-                    </>
-                )}
-                <dt>選考段階</dt>
-                <dd>{STAGE_LABELS[round.stage]}</dd>
-                <dt>応募日</dt>
-                <dd>{displayDate(round.applicationDate)}</dd>
-                <dt>選考状況</dt>
-                <dd className="round-screen__note">{round.statusNote || '—'}</dd>
-            </dl>
+                </div>
+                <StageTracker stage={round.stage} />
+                <dl className="round-hero__note">
+                    <dt>選考状況</dt>
+                    <dd className="round-screen__note">{round.statusNote || '—'}</dd>
+                </dl>
+            </header>
 
             <section className="round-screen__group">
                 <div className="round-screen__header">
@@ -136,6 +142,7 @@ function ApplicationRoundDetailScreen() {
                     {canWrite && (
                         <Button
                             variant="secondary"
+                            className="round-screen__new"
                             onClick={() =>
                                 navigate(PATHS.recordNew, {
                                     state: {
@@ -146,6 +153,7 @@ function ApplicationRoundDetailScreen() {
                                 })
                             }
                         >
+                            <Plus size={16} aria-hidden="true" />
                             この応募回に活動記録を追加
                         </Button>
                     )}
@@ -153,40 +161,27 @@ function ApplicationRoundDetailScreen() {
                 {records.length === 0 ? (
                     <EmptyState message={getMessage('N-006')} />
                 ) : (
-                    <div className="round-screen__table-wrap">
-                        <table className="round-screen__table">
-                            <thead>
-                                <tr>
-                                    <th scope="col">実施日</th>
-                                    <th scope="col">活動種別</th>
-                                    <th scope="col">状態</th>
-                                    <th scope="col">操作</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {records.map((record) => (
-                                    <tr key={record.recordId}>
-                                        <td>{displayDate(record.conductedOn)}</td>
-                                        <td>
-                                            {record.activityTypes
-                                                .map((type) => ACTIVITY_TYPE_LABELS[type])
-                                                .join('、')}
-                                        </td>
-                                        <td>{RECORD_STATUS_LABELS[record.status]}</td>
-                                        <td>
-                                            <Link
-                                                to={generatePath(PATHS.recordDetail, {
-                                                    recordId: record.recordId,
-                                                })}
-                                            >
-                                                詳細
-                                            </Link>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    <ul className="round-records">
+                        {records.map((record) => (
+                            <li key={record.recordId} className="round-records__item">
+                                <TextLink
+                                    to={generatePath(PATHS.recordDetail, {
+                                        recordId: record.recordId,
+                                    })}
+                                >
+                                    {displayDate(record.conductedOn)}の記録
+                                </TextLink>
+                                <span className="round-records__types">
+                                    {record.activityTypes.map((type) => (
+                                        <Badge key={type} size="sm">
+                                            {ACTIVITY_TYPE_LABELS[type]}
+                                        </Badge>
+                                    ))}
+                                </span>
+                                <StatusMark status={record.status} size="sm" />
+                            </li>
+                        ))}
+                    </ul>
                 )}
             </section>
 
@@ -195,7 +190,7 @@ function ApplicationRoundDetailScreen() {
                 {history.length === 0 ? (
                     <EmptyState message={getMessage('N-006')} />
                 ) : (
-                    <ul className="round-screen__history">
+                    <ul className="timeline">
                         {history.map((item) => (
                             <li key={`${item.editorUserId}|${item.editedAt}`}>
                                 {formatDateTime(item.editedAt)} {item.editorName}

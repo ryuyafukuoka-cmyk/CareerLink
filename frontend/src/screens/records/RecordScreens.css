@@ -6,14 +6,7 @@
     gap: var(--space-3);
 }
 
-.record-screen__badge {
-    display: inline-block;
-    padding: 0 var(--space-2);
-    font-size: var(--font-size-sm);
-    color: var(--color-text-muted);
-    border: var(--border-width) solid var(--color-border);
-    border-radius: var(--radius-sm);
-}
+/* ---- Record detail (SC-02-02) ---- */
 
 .record-screen__notice-note {
     margin: 0;
@@ -21,58 +14,146 @@
     color: var(--color-text-muted);
 }
 
+.record-hero {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-6);
+    background: var(--color-primary-soft);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.record-hero__top {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    align-items: flex-end;
+    justify-content: space-between;
+}
+
+.record-hero__title {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.record-hero__tags,
+.record-hero__actions,
+.record-hero__facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.record-hero__actions .button {
+    display: inline-flex;
+    gap: var(--space-2);
+    align-items: center;
+}
+
+.record-hero__facts {
+    gap: var(--space-3) var(--space-6);
+}
+
+.record-hero__facts dt,
+.record-aside__dates dt {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}
+
+.record-hero__facts dd {
+    margin: 0;
+    font-weight: var(--font-weight-bold);
+}
+
+.record-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 15rem;
+    gap: var(--space-5);
+    align-items: start;
+}
+
+.record-aside {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    font-size: var(--font-size-sm);
+}
+
+.record-aside__title {
+    font-size: var(--font-size-md);
+}
+
+.record-aside__dates dd {
+    margin: 0 0 var(--space-2);
+}
+
 .record-screen__sections {
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
+    min-width: 0;
 }
 
 .record-view {
-    padding: var(--space-4);
+    padding: var(--space-5);
     background: var(--color-surface);
     border: var(--border-width) solid var(--color-border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
 }
 
-.record-view h3 {
-    margin: 0 0 var(--space-3);
+.record-view h2 {
+    margin: 0 0 var(--space-4);
+    font-size: var(--font-size-lg);
 }
 
+/* Label above its answer: long free text reads best at full width. */
 .record-view__fields {
-    display: grid;
-    grid-template-columns: max-content 1fr;
-    gap: var(--space-2) var(--space-5);
     margin: 0;
 }
 
 .record-view__fields dt {
+    font-size: var(--font-size-sm);
     color: var(--color-text-muted);
 }
 
 .record-view__fields dd {
-    margin: 0;
+    max-width: 48rem;
+    margin: var(--space-1) 0 var(--space-4);
     white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }
 
+.record-view__fields dd:last-child {
+    margin-bottom: 0;
+}
+
+/* Questions are numbered: they are in the order they were asked. */
 .record-view__questions {
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
     margin: 0;
-    padding: 0;
-    list-style: none;
+    padding: 0 0 0 var(--space-5);
+    white-space: normal;
 }
 
 .record-view__question {
-    padding: var(--space-3);
-    background: var(--color-surface-alt);
-    border-radius: var(--radius-sm);
+    padding-left: var(--space-2);
 }
 
-.record-view__category {
-    margin: 0 0 var(--space-1);
-    font-size: var(--font-size-sm);
-    color: var(--color-text-muted);
+.record-view__question + .record-view__question {
+    padding-top: var(--space-3);
+    border-top: var(--border-width) solid var(--color-border);
+}
+
+.record-view__question-text {
+    margin: var(--space-1) 0;
+    font-weight: var(--font-weight-bold);
+    white-space: pre-wrap;
 }
 
 .record-view__text {
@@ -80,13 +161,52 @@
     white-space: pre-wrap;
 }
 
+.record-view__label {
+    margin-right: var(--space-3);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+/* Follow-up questions branch off the question, like the side menu. */
 .record-view__followups {
-    margin: var(--space-2) 0 0;
-    padding-left: var(--space-5);
+    margin: var(--space-1) 0 0;
+    padding: 0 0 0 var(--space-3);
+    list-style: none;
+}
+
+.record-view__followups li {
+    position: relative;
+    padding: var(--space-1) 0 var(--space-1) var(--space-5);
+}
+
+.record-view__followups li::before,
+.record-view__followups li:not(:last-child)::after {
+    position: absolute;
+    top: 0;
+    left: 0;
+    content: '';
+    border-left: 2px solid var(--color-border-strong);
+}
+
+.record-view__followups li::before {
+    width: var(--space-3);
+    height: 1.05rem;
+    border-bottom: 2px solid var(--color-border-strong);
+    border-bottom-left-radius: var(--radius-md);
+}
+
+.record-view__followups li:not(:last-child)::after {
+    bottom: 0;
 }
 
 .record-screen__delete-error {
     margin: var(--space-3) 0 0;
+}
+
+@media (max-width: 900px) {
+    .record-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
 /* ---- Record list (SC-02-01) ---- */

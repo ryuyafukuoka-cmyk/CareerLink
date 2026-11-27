@@ -1,3 +1,4 @@
+/* SC-04-01 Company list: a directory. Each name carries its reading above it, like furigana. */
 .company-list {
     display: flex;
     flex-direction: column;
@@ -9,54 +10,204 @@
 
 .company-list__header {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-4);
 }
 
+.company-list__new {
+    display: inline-flex;
+    gap: var(--space-2);
+    align-items: center;
+}
+
+/* Search */
 .company-list__search {
-    max-width: var(--form-max-width);
-    padding: var(--space-4);
-    background: var(--color-surface);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+    align-items: start;
+    padding: var(--space-5);
+    background: var(--color-primary-soft);
     border: var(--border-width) solid var(--color-border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
 }
 
 .company-list__search-actions {
     display: flex;
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
     gap: var(--space-3);
 }
 
-.company-list__table-wrap {
-    overflow-x: auto;
+/* Count and applied conditions */
+.company-list__summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: center;
+}
+
+.company-list__count {
+    color: var(--color-text-muted);
+}
+
+.company-list__count-value {
+    margin-right: var(--space-1);
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text);
+}
+
+.company-list__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: 0;
+    list-style: none;
+}
+
+.company-list__chip {
+    display: inline-flex;
+    gap: var(--space-1);
+    align-items: center;
+    padding: 0.125rem var(--space-3);
+    font: inherit;
+    font-size: var(--font-size-sm);
+    color: var(--color-primary);
+    cursor: pointer;
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-primary);
+    border-radius: 999px;
+    transition: background-color var(--transition-fast);
+    animation: fade-rise-in var(--duration-base) var(--ease-out) backwards;
+}
+
+.company-list__chip:hover {
+    background: var(--color-primary-soft);
+}
+
+/* Directory */
+.company-list__items {
+    padding: 0;
+    list-style: none;
     background: var(--color-surface);
     border: var(--border-width) solid var(--color-border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
 }
 
-.company-list__table {
-    width: 100%;
-    border-collapse: collapse;
+.company-list__item {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr) 8.5rem;
+    gap: var(--space-4);
+    align-items: center;
+    padding: var(--space-4) var(--space-5);
+    transition: background-color var(--transition-fast);
 }
 
-.company-list__table th,
-.company-list__table td {
-    padding: var(--space-3) var(--space-4);
-    text-align: left;
-    vertical-align: top;
-    border-bottom: var(--border-width) solid var(--color-border);
+.company-list__item + .company-list__item {
+    border-top: var(--border-width) solid var(--color-border);
 }
 
-.company-list__table th {
-    font-size: var(--font-size-sm);
+.company-list__item:first-child {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.company-list__item:last-child {
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.company-list__item:only-child {
+    border-radius: var(--radius-lg);
+}
+
+.company-list__item:hover {
     background: var(--color-surface-alt);
 }
 
-.company-list__table tbody tr:last-child td {
-    border-bottom: 0;
+.company-list__name {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: flex-start;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.company-list__link {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+}
+
+/* The whole row opens the company. */
+.company-list__link::after {
+    position: absolute;
+    inset: 0;
+    content: '';
 }
 
 .company-list__kana {
     font-size: var(--font-size-xs);
+    line-height: var(--line-height-tight);
     color: var(--color-text-muted);
+}
+
+.company-list__regions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    padding: 0;
+    list-style: none;
+}
+
+.company-list__site {
+    justify-self: end;
+    font-size: var(--font-size-sm);
+}
+
+/* Above the row-wide link; the hovered one also above its neighbours so its hint is not covered. */
+.company-list__site .external-link {
+    z-index: 1;
+}
+
+.company-list__site .external-link:hover,
+.company-list__site .external-link:focus-within {
+    z-index: 2;
+}
+
+.company-list__site .text-link {
+    display: inline-flex;
+    gap: var(--space-1);
+    align-items: center;
+}
+
+.company-list__no-site {
+    color: var(--color-text-muted);
+}
+
+@media (max-width: 800px) {
+    .company-list__search,
+    .company-list__item {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .company-list__item {
+        gap: var(--space-2);
+    }
+
+    .company-list__site {
+        justify-self: start;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .company-list__chip {
+        animation: none;
+        transition: none;
+    }
+
+    .company-list__item {
+        transition: none;
+    }
 }

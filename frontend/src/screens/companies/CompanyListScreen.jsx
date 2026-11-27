@@ -1,16 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Link, generatePath, useLocation, useSearchParams } from 'react-router-dom';
+import { ExternalLink as ExternalIcon, Plus, Search, X } from 'lucide-react';
+import { generatePath, useLocation, useSearchParams } from 'react-router-dom';
 import { getRegionName } from '@shared/definitions';
 import { listCompanies } from '@/api/companies.js';
+import AnimatedNumber from '@/components/AnimatedNumber/AnimatedNumber.jsx';
+import Badge from '@/components/Badge/Badge.jsx';
 import Button from '@/components/Button/Button.jsx';
 import EmptyState from '@/components/EmptyState/EmptyState.jsx';
 import ErrorMessage from '@/components/ErrorMessage/ErrorMessage.jsx';
+import ExternalLink from '@/components/ExternalLink/ExternalLink.jsx';
 import FormField from '@/components/FormField/FormField.jsx';
+import InputGroup from '@/components/InputGroup/InputGroup.jsx';
 import Loading from '@/components/Loading/Loading.jsx';
 import Notice from '@/components/Notice/Notice.jsx';
 import Pagination from '@/components/Pagination/Pagination.jsx';
 import RegionSelect from '@/components/RegionSelect/RegionSelect.jsx';
 import TextInput from '@/components/TextInput/TextInput.jsx';
+import TextLink from '@/components/TextLink/TextLink.jsx';
 import { getMessage } from '@/messages';
 import { useOverlay, useOverlayResult } from '@/hooks/useOverlay.js';
 import { PATHS } from '@/routes/paths.js';
@@ -78,6 +84,18 @@ function CompanyListScreen() {
         search('', []);
     }
 
+    // Removing an applied condition searches again right away.
+    function removeKeyword() {
+        setKeywordInput('');
+        search('', splitRegions(regionsText));
+    }
+
+    function removeRegion(id) {
+        const next = splitRegions(regionsText).filter((regionId) => regionId !== id);
+        setRegionsInput(next);
+        search(keyword, next);
+    }
+
     function handlePageChange(nextPage) {
         const params = Object.fromEntries(searchParams);
         params.page = String(nextPage);
@@ -85,12 +103,17 @@ function CompanyListScreen() {
     }
 
     const { data, error } = result.key === requestKey ? result : { data: null, error: null };
+    const appliedRegions = splitRegions(regionsText);
+    const filtered = Boolean(keyword) || appliedRegions.length > 0;
 
     return (
         <main className="company-list">
             <div className="company-list__header">
                 <h1>企業一覧</h1>
-                <Button onClick={() => createForm.open()}>企業を登録する</Button>
+                <Button className="company-list__new" onClick={() => createForm.open()}>
+                    <Plus size={18} aria-hidden="true" />
+                    企業を登録する
+                </Button>
             </div>
 
             {(created || state?.noticeId) && (
@@ -99,10 +122,12 @@ function CompanyListScreen() {
 
             <form className="company-list__search" onSubmit={handleSubmit}>
                 <FormField label="企業名" hint="正式名称・カタカナの一部で検索できます。">
-                    <TextInput
-                        value={keywordInput}
-                        onChange={(event) => setKeywordInput(event.target.value)}
-                    />
+                    <InputGroup start={<Search size={16} aria-hidden="true" />}>
+                        <TextInput
+                            value={keywordInput}
+                            onChange={(event) => setKeywordInput(event.target.value)}
+                        />
+                    </InputGroup>
                 </FormField>
                 <FormField
                     group
@@ -121,6 +146,50 @@ function CompanyListScreen() {
                 </div>
             </form>
 
+            {(filtered || data?.items.length > 0) && (
+                <div className="company-list__summary">
+                    {data && (
+                        <p className="company-list__count" role="status">
+                            <AnimatedNumber
+                                className="company-list__count-value"
+                                value={data.totalCount}
+                            />
+                            社
+                        </p>
+                    )}
+                    {filtered && (
+                        <ul className="company-list__chips" aria-label="検索中の条件">
+                            {keyword && (
+                                <li>
+                                    <button
+                                        type="button"
+                                        className="company-list__chip"
+                                        onClick={removeKeyword}
+                                        aria-label={`企業名「${keyword}」の条件を外す`}
+                                    >
+                                        「{keyword}」
+                                        <X size={14} aria-hidden="true" />
+                                    </button>
+                                </li>
+                            )}
+                            {appliedRegions.map((id) => (
+                                <li key={id}>
+                                    <button
+                                        type="button"
+                                        className="company-list__chip"
+                                        onClick={() => removeRegion(id)}
+                                        aria-label={`勤務地「${getRegionName(id)}」の条件を外す`}
+                                    >
+                                        {getRegionName(id)}
+                                        <X size={14} aria-hidden="true" />
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+            )}
+
             {loading && <Loading />}
             {error && <ErrorMessage error={error} onRetry={() => setReloadCount((n) => n + 1)} />}
             {data && data.items.length === 0 && (
@@ -132,49 +201,43 @@ function CompanyListScreen() {
             )}
             {data && data.items.length > 0 && (
                 <>
-                    <div className="company-list__table-wrap">
-                        <table className="company-list__table">
-                            <thead>
-                                <tr>
-                                    <th scope="col">企業名</th>
-                                    <th scope="col">勤務地</th>
-                                    <th scope="col">公式サイト</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {data.items.map((company) => (
-                                    <tr key={company.companyId}>
-                                        <td>
-                                            <Link
-                                                to={generatePath(PATHS.companyDetail, {
-                                                    companyId: company.companyId,
-                                                })}
-                                            >
-                                                {company.nameOfficial}
-                                            </Link>
-                                            <div className="company-list__kana">
-                                                {company.nameKatakana}
-                                            </div>
-                                        </td>
-                                        <td>{company.prefectures.map(getRegionName).join('、')}</td>
-                                        <td>
-                                            {company.websiteUrl && isHttpUrl(company.websiteUrl) ? (
-                                                <a
-                                                    href={company.websiteUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                >
-                                                    開く
-                                                </a>
-                                            ) : (
-                                                '—'
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    <ul className="company-list__items">
+                        {data.items.map((company) => (
+                            <li key={company.companyId} className="company-list__item">
+                                <div className="company-list__name">
+                                    <TextLink
+                                        className="company-list__link"
+                                        to={generatePath(PATHS.companyDetail, {
+                                            companyId: company.companyId,
+                                        })}
+                                    >
+                                        {company.nameOfficial}
+                                    </TextLink>
+                                    {/* Shown above the name, like furigana (column-reverse). */}
+                                    <span className="company-list__kana">
+                                        {company.nameKatakana}
+                                    </span>
+                                </div>
+                                <ul className="company-list__regions" aria-label="勤務地">
+                                    {company.prefectures.map((id) => (
+                                        <li key={id}>
+                                            <Badge size="sm">{getRegionName(id)}</Badge>
+                                        </li>
+                                    ))}
+                                </ul>
+                                <div className="company-list__site">
+                                    {company.websiteUrl && isHttpUrl(company.websiteUrl) ? (
+                                        <ExternalLink href={company.websiteUrl}>
+                                            公式サイト
+                                            <ExternalIcon size={14} aria-hidden="true" />
+                                        </ExternalLink>
+                                    ) : (
+                                        <span className="company-list__no-site">サイトなし</span>
+                                    )}
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
                     <Pagination
                         page={data.page}
                         totalCount={data.totalCount}
