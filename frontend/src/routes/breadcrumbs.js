@@ -17,7 +17,6 @@ const NODES = {
     [PATHS.rounds]: { label: '応募企業・選考進捗', parent: PATHS.home },
     [PATHS.roundNew]: { label: '応募回登録', parent: PATHS.rounds },
     [PATHS.roundDetail]: { label: '応募回の活動記録', parent: PATHS.rounds },
-    [PATHS.roundEdit]: { label: '選考進捗編集', parent: PATHS.roundDetail },
 
     [PATHS.search]: { label: '過去情報検索', parent: PATHS.home },
     [PATHS.searchResults]: { label: '検索結果', parent: PATHS.search },

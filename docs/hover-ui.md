@@ -22,6 +22,8 @@ Handoff for a new chat. Read this whole file first. Branch: `ui/redesign-v2`. Fr
 | Motion tokens and shared enter animation                                   | `styles/tokens.css`, `styles/motion.css`, page fade in `AppLayout`, button press in `Button.css` |
 | Gallery demo of Dialog / Drawer / stacked / dirty                          | `gallery/GalleryPage.jsx` (open `/gallery.html`)                                                 |
 
+Step 2 (round create and progress edit) is done: `screens/rounds/RoundFormDialog.jsx` / `RoundForm.jsx` (opened from the rounds list and the home screen) and `RoundEditDialog.jsx` / `RoundEditForm.jsx` (opened from the rounds list and the round detail), both on `RoundDialog.jsx`. `RoundEditScreen` and the `/rounds/:roundId/edit` route are deleted. `RoundCreateScreen` (`/rounds/new`) is TEMPORARY: only the record form still navigates there (`returnTo`); delete it in step 4.
+
 Step 1 of the work breakdown (company create and edit dialogs, `screens/companies/CompanyFormDialog.jsx`) is done. The record form and round create pages open the same dialog for "register company".
 
 Component props are in `components/README.md` (section "Hover UIs (overlays) and motion").

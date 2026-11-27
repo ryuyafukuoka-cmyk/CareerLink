@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, generatePath, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, generatePath, useSearchParams } from 'react-router-dom';
 import { ROLES, STAGE_LABELS } from '@shared/definitions';
 import { listCompanyOptions } from '@/api/companies.js';
 import { listApplicationRounds } from '@/api/rounds.js';
@@ -10,25 +10,38 @@ import EmptyState from '@/components/EmptyState/EmptyState.jsx';
 import ErrorMessage from '@/components/ErrorMessage/ErrorMessage.jsx';
 import FormField from '@/components/FormField/FormField.jsx';
 import Loading from '@/components/Loading/Loading.jsx';
-import Notice from '@/components/Notice/Notice.jsx';
 import Select from '@/components/Select/Select.jsx';
+import { toast } from '@/components/Toast/toast.js';
+import { useOverlay, useOverlayResult } from '@/hooks/useOverlay.js';
 import { getMessage } from '@/messages';
 import { PATHS } from '@/routes/paths.js';
+import RoundEditDialog from './RoundEditDialog.jsx';
+import RoundFormDialog from './RoundFormDialog.jsx';
 import { displayDate, groupByCompany, numberRounds, studentOptions } from './roundHelpers.js';
 import './RoundScreens.css';
 
 // SC-02-04 Application rounds and selection progress, grouped by company.
 // Student: own rounds. Instructor / admin: all students, or one chosen student (kept in the URL).
 function ApplicationRoundListScreen() {
-    const navigate = useNavigate();
-    const { state } = useLocation();
     const { role } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const isStaff = role !== ROLES.STUDENT;
     const canWrite = role === ROLES.STUDENT || role === ROLES.ADMIN; // instructors are read-only
     const studentUserId = isStaff ? (searchParams.get('studentUserId') ?? '') : '';
 
+    // SC-02-06 and SC-02-07 open over this list; after a save the list is read again.
+    const createForm = useOverlay('roundCreate');
+    const editForm = useOverlay('roundEdit');
     const [reloadCount, setReloadCount] = useState(0);
+    useOverlayResult('roundCreate', () => {
+        toast.success(getMessage('S-302'));
+        setReloadCount((n) => n + 1);
+    });
+    useOverlayResult('roundEdit', () => {
+        toast.success(getMessage('S-301'));
+        setReloadCount((n) => n + 1);
+    });
+
     const [result, setResult] = useState({ key: null, data: null, error: null });
     const requestKey = `${role}|${studentUserId}|${reloadCount}`;
     const loading = result.key !== requestKey;
@@ -77,11 +90,13 @@ function ApplicationRoundListScreen() {
             <div className="round-screen__header">
                 <h1>応募企業・選考進捗</h1>
                 {canWrite && (
-                    <Button onClick={() => navigate(PATHS.roundNew)}>応募回を登録する</Button>
+                    <Button
+                        onClick={() => createForm.open(studentUserId ? { studentUserId } : null)}
+                    >
+                        応募回を登録する
+                    </Button>
                 )}
             </div>
-
-            {state?.noticeId && <Notice message={getMessage(state.noticeId)} />}
 
             {isStaff && (
                 <div className="round-screen__filter">
@@ -137,11 +152,20 @@ function ApplicationRoundListScreen() {
                                                     活動記録・履歴
                                                 </Link>
                                                 {canWrite && (
-                                                    <Link
-                                                        to={generatePath(PATHS.roundEdit, params)}
+                                                    <button
+                                                        type="button"
+                                                        className="round-screen__link"
+                                                        onClick={() =>
+                                                            editForm.open({
+                                                                round,
+                                                                companyName:
+                                                                    companyNames.get(companyId) ??
+                                                                    null,
+                                                            })
+                                                        }
                                                     >
                                                         進捗を編集
-                                                    </Link>
+                                                    </button>
                                                 )}
                                             </td>
                                         </tr>
@@ -152,6 +176,9 @@ function ApplicationRoundListScreen() {
                     </div>
                 </section>
             ))}
+
+            <RoundFormDialog overlay={createForm} />
+            <RoundEditDialog overlay={editForm} />
         </main>
     );
 }

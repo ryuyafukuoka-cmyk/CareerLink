@@ -15,7 +15,6 @@ export const PATHS = Object.freeze({
     rounds: '/rounds',
     roundNew: '/rounds/new',
     roundDetail: '/rounds/:roundId',
-    roundEdit: '/rounds/:roundId/edit',
     // SC-03
     search: '/search',
     searchResults: '/search/results',

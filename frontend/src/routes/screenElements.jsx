@@ -19,7 +19,6 @@ import HomeScreen from '@/screens/home/HomeScreen.jsx';
 import ApplicationRoundDetailScreen from '@/screens/rounds/ApplicationRoundDetailScreen.jsx';
 import ApplicationRoundListScreen from '@/screens/rounds/ApplicationRoundListScreen.jsx';
 import RoundCreateScreen from '@/screens/rounds/RoundCreateScreen.jsx';
-import RoundEditScreen from '@/screens/rounds/RoundEditScreen.jsx';
 import RecordSearchConditionScreen from '@/screens/search/RecordSearchConditionScreen.jsx';
 import RecordSearchResultScreen from '@/screens/search/RecordSearchResultScreen.jsx';
 import FirstRegistrationScreen from '@/screens/users/FirstRegistrationScreen.jsx';
@@ -48,6 +47,5 @@ export const SCREEN_ELEMENTS = {
     [PATHS.adminDraftCleanup]: <DraftCleanupScreen />,
     [PATHS.rounds]: <ApplicationRoundListScreen />,
     [PATHS.roundNew]: <RoundCreateScreen />,
-    [PATHS.roundEdit]: <RoundEditScreen />,
     [PATHS.roundDetail]: <ApplicationRoundDetailScreen />,
 };

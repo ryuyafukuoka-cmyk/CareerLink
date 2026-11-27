@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, generatePath, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, generatePath, useNavigate, useParams } from 'react-router-dom';
 import {
     ACTIVITY_TYPE_LABELS,
     RECORD_STATUS_LABELS,
@@ -14,10 +14,12 @@ import Button from '@/components/Button/Button.jsx';
 import EmptyState from '@/components/EmptyState/EmptyState.jsx';
 import ErrorMessage from '@/components/ErrorMessage/ErrorMessage.jsx';
 import Loading from '@/components/Loading/Loading.jsx';
-import Notice from '@/components/Notice/Notice.jsx';
+import { toast } from '@/components/Toast/toast.js';
+import { useOverlay, useOverlayResult } from '@/hooks/useOverlay.js';
 import { getMessage } from '@/messages';
 import { PATHS } from '@/routes/paths.js';
 import { formatDateTime } from '@/utils/date.js';
+import RoundEditDialog from './RoundEditDialog.jsx';
 import { displayDate } from './roundHelpers.js';
 import './RoundScreens.css';
 
@@ -25,12 +27,18 @@ import './RoundScreens.css';
 function ApplicationRoundDetailScreen() {
     const { roundId } = useParams();
     const { role } = useAuth();
-    const { state } = useLocation();
     const navigate = useNavigate();
     const isStaff = role !== ROLES.STUDENT;
     const canWrite = role === ROLES.STUDENT || role === ROLES.ADMIN; // instructors are read-only
 
+    // SC-02-07 opens over this page; after a save the page is read again.
+    const editForm = useOverlay('roundEdit');
     const [reloadCount, setReloadCount] = useState(0);
+    useOverlayResult('roundEdit', () => {
+        toast.success(getMessage('S-301'));
+        setReloadCount((n) => n + 1);
+    });
+
     const [result, setResult] = useState({ key: null, data: null, error: null });
     const requestKey = `${roundId}|${role}|${reloadCount}`;
 
@@ -61,7 +69,8 @@ function ApplicationRoundDetailScreen() {
         };
     }, [roundId, isStaff, requestKey]);
 
-    if (result.key !== requestKey) return <Loading centered />;
+    // Keep showing the page while it is read again after a save, so the dialog can close smoothly.
+    if (result.key === null) return <Loading centered />;
 
     const { data, error } = result;
     if (error) {
@@ -78,13 +87,10 @@ function ApplicationRoundDetailScreen() {
     }
 
     const { round, records, history, company, studentName } = data;
-    const params = { roundId: round.applicationRoundId };
 
     return (
         <main className="round-screen">
             <Link to={PATHS.rounds}>← 応募企業・選考進捗</Link>
-
-            {state?.noticeId && <Notice message={getMessage(state.noticeId)} />}
 
             <div className="round-screen__header">
                 <h1>
@@ -99,7 +105,11 @@ function ApplicationRoundDetailScreen() {
                     )}
                 </h1>
                 {canWrite && (
-                    <Button onClick={() => navigate(generatePath(PATHS.roundEdit, params))}>
+                    <Button
+                        onClick={() =>
+                            editForm.open({ round, companyName: company?.nameOfficial ?? null })
+                        }
+                    >
                         選考進捗を編集
                     </Button>
                 )}
@@ -194,6 +204,8 @@ function ApplicationRoundDetailScreen() {
                     </ul>
                 )}
             </section>
+
+            <RoundEditDialog overlay={editForm} />
         </main>
     );
 }

@@ -45,8 +45,9 @@ export const SCREENS = [
     { screenId: 'SC-02-03', name: '活動記録編集', path: PATHS.recordEdit, access: 'any' },
     { screenId: 'SC-02-04', name: '応募企業・選考進捗', path: PATHS.rounds, access: 'any' },
     { screenId: 'SC-02-05', name: '応募回別活動記録一覧', path: PATHS.roundDetail, access: 'any' },
+    // SC-02-06 is a dialog now (RoundFormDialog). This route stays only for the record form until step 4.
     { screenId: 'SC-02-06', name: '応募回登録', path: PATHS.roundNew, access: WRITERS },
-    { screenId: 'SC-02-07', name: '選考進捗編集', path: PATHS.roundEdit, access: WRITERS },
+    // SC-02-07 (progress edit) is a dialog (RoundEditDialog) with no route.
 
     { screenId: 'SC-03-01', name: '過去情報検索条件', path: PATHS.search, access: 'any' },
     { screenId: 'SC-03-02', name: '過去情報検索結果', path: PATHS.searchResults, access: 'any' },

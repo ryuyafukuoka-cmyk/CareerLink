@@ -44,26 +44,13 @@ const MENU_TREE = [
             },
         ],
     },
+    // "Register a round" is a button on this page now (SC-02-06 is a dialog).
     {
         id: 'rounds',
-        icon: ClipboardList,
         label: '応募企業・選考進捗',
-        children: [
-            {
-                id: 'roundList',
-                label: '応募企業一覧',
-                path: PATHS.rounds,
-                icon: ClipboardList,
-                roles: ALL_ROLES,
-            },
-            {
-                id: 'roundNew',
-                label: '応募回を登録',
-                path: PATHS.roundNew,
-                icon: Plus,
-                roles: WRITERS,
-            },
-        ],
+        path: PATHS.rounds,
+        icon: ClipboardList,
+        roles: ALL_ROLES,
     },
     {
         id: 'lookup',
