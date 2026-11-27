@@ -16,6 +16,53 @@ async function login(subject, group = 'student') {
     return { headers, id: data.user.userId };
 }
 
+test('未登録の学生が初回ログイン後に本人情報を取得でき、再ログインでも同じユーザーになる', async () => {
+    const headers = {
+        'X-Dev-Sub': 'login-flow-student',
+        'X-Dev-Groups': 'student',
+    };
+
+    // 登録前は本人情報を取得できない。
+    const beforeLogin = await api.request('GET', '/users/me', { headers, status: 403 });
+    assert.equal(beforeLogin.error.code, 'FORBIDDEN');
+
+    // 初回ログインで学生として登録される。
+    const { data: first } = await api.request('POST', '/auth/login', { headers });
+    assert.ok(first.user.userId);
+    assert.equal(first.user.role, 'student');
+    assert.equal(first.user.graduationYear, null);
+    assert.equal(first.isFirstLogin, true);
+
+    // ログイン後は、同じ認証情報で本人情報を取得できる。
+    const { data: me } = await api.request('GET', '/users/me', { headers });
+    assert.equal(me.userId, first.user.userId);
+    assert.equal(me.role, 'student');
+
+    // 再ログインしても同じユーザーで、卒業年度の登録は引き続き必要になる。
+    const { data: second } = await api.request('POST', '/auth/login', { headers });
+    assert.equal(second.user.userId, first.user.userId);
+    assert.equal(second.isFirstLogin, true);
+});
+
+test('対象グループに所属しない未登録ユーザーはログインできず、認証情報も登録されない', async () => {
+    const subject = 'login-flow-ineligible';
+    const headers = {
+        'X-Dev-Sub': subject,
+        'X-Dev-Groups': 'outside-group',
+    };
+
+    const { error } = await api.request('POST', '/auth/login', { headers, status: 403 });
+    assert.equal(error.code, 'FORBIDDEN');
+    assert.equal(error.reason, 'NOT_ELIGIBLE');
+
+    // 拒否されたユーザーの認証情報がDBに残っていないことを確認する。
+    const [rows] = await api.pool.query(
+        'SELECT users_id FROM user_auth WHERE auth_issuer = ? AND auth_subject = ?',
+        ['https://dev.local/careerlink', subject],
+    );
+    assert.equal(rows.length, 0);
+});
+
 test('long draft round-trips through MariaDB and company, round and record writes leave audit entries', async () => {
     const student = await login('long-record');
     const teacher = await login('record-reviewer', 'instructor');
