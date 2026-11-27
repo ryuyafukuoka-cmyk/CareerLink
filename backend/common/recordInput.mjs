@@ -1,4 +1,4 @@
-// ActivityRecordInput validation and normalization for both APIs and the browser.
+// 本体API・モックAPI・ブラウザーが共用する活動記録（ActivityRecordInput）の検証と正規化。
 import rules from './recordInputRules.json' with { type: 'json' };
 
 export const ACTIVITY_RECORD_BODY_LIMIT_BYTES = rules.bodyLimitBytes;
@@ -13,8 +13,8 @@ export const RECORD_NUMBER_LIMITS = Object.freeze({
 
 const utf8 = new TextEncoder();
 const jsonByteLength = (value) => utf8.encode(JSON.stringify(value)).byteLength;
-const TEXT_MAX = 20000; // TEXT columns
-const TEXT_MAX_BYTES = 65535; // Capacity of a MariaDB TEXT column in bytes.
+const TEXT_MAX = 20000; // TEXT 型の列
+const TEXT_MAX_BYTES = 65535; // MariaDB の TEXT 列に保存できる最大バイト数。
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 
 export function isRecordBodyTooLarge(input) {
@@ -28,7 +28,7 @@ function isRealDate(value) {
     return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
 }
 
-// Collects errors; `incomplete` becomes true when a complete-only required item is missing.
+// 項目別にエラーを集める。完了時に必須の項目が未入力なら incomplete を true にする。
 class Collector {
     constructor(mode) {
         this.mode = mode;
@@ -44,7 +44,7 @@ class Collector {
     }
 }
 
-// Text: trimmed, empty -> null. Required items are only enforced when completing.
+// テキストは前後の空白を除き、空なら null にする。必須チェックは完了時に行う。
 function text(c, value, field, { max = TEXT_MAX, required = false } = {}) {
     if (value !== undefined && value !== null && typeof value !== 'string') {
         c.add(field, 'E-202');
@@ -88,7 +88,7 @@ function parseInterview(c, raw, stage) {
                 c.add(qp, 'E-202');
                 return;
             }
-            // Category: may be empty only while the round is "considering" (draft included).
+            // カテゴリを空にできるのは応募回が considering のときだけ。下書きにも同じ規則を適用する。
             let category = null;
             if (q.category !== undefined && q.category !== null && q.category !== '') {
                 if (QUESTION_CATEGORY_VALUES.includes(q.category)) category = q.category;
@@ -105,7 +105,7 @@ function parseInterview(c, raw, stage) {
                         const t = text(c, f, `${qp}.followUps[${j}]`);
                         if (t !== null) followUps.push(t);
                     });
-                    // The repository serializes all follow-ups into one TEXT column.
+                    // 深掘り質問はリポジトリ側でまとめてシリアライズし、1つの TEXT 列に保存する。
                     if (jsonByteLength(followUps) > TEXT_MAX_BYTES) {
                         c.add(`${qp}.followUps`, 'E-202');
                     }
@@ -177,13 +177,12 @@ function parseOther(c, raw) {
     };
 }
 
-// input: the ActivityRecordInput body. mode: 'draft' | 'complete'. stage: the round's stage.
-// Draft: types + (round, company are checked by the caller). Complete: also the date and every
-// required item of each selected type.
+// input は活動記録の入力、mode は draft または complete、stage は応募回の選考段階。
+// 下書きでは活動種別を検証し、企業と応募回は呼び出し元で確認する。完了時は実施日と選択した種別の必須項目も検証する。
 export function validateRecordContent(input, mode, stage) {
     const c = new Collector(mode);
 
-    // Activity types: 1 or more, known values, no duplicates.
+    // 活動種別は定義済みの値を1つ以上選ぶ。同じ種別の重複は認めない。
     const typesRaw = input.activityTypes;
     let activityTypes = [];
     if (
@@ -197,7 +196,7 @@ export function validateRecordContent(input, mode, stage) {
         activityTypes = ACTIVITY_TYPE_VALUES.filter((t) => typesRaw.includes(t));
     }
 
-    // Date: required (real YYYY/MM/DD) to complete; a draft may leave it empty.
+    // 完了時は YYYY/MM/DD 形式の実在する実施日が必須。下書きでは空欄も許可する。
     let conductedOn = null;
     const date = input.conductedOn;
     if (date === undefined || date === null || date === '') {
@@ -208,7 +207,7 @@ export function validateRecordContent(input, mode, stage) {
         conductedOn = date;
     }
 
-    // Sections: only for the selected types.
+    // 選択した活動種別のセクションだけを対象にする。
     const sectionsRaw = input.sections === undefined ? {} : input.sections;
     const sections = {};
     if (!isObject(sectionsRaw)) {

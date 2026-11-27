@@ -1,9 +1,9 @@
-// Validation rules shared by the mock routes. Error `details` use { field, messageId }.
+// モックの各ルートが共用する入力規則。エラーの details には { field, messageId } を格納する。
 
 const MIN_GRADUATION_YEAR = 2000;
 const MAX_GRADUATION_YEAR = 2100;
 
-// Full-width katakana, long vowel mark, middle dot, half/full-width spaces only.
+// 全角カタカナ、長音符、中点、半角・全角スペースのみ許可する。
 const KATAKANA_PATTERN = /^[ァ-ヶー・ 　]+$/u;
 
 function isHttpUrl(value) {
@@ -19,8 +19,7 @@ function isRegionId(value) {
     return /^\d+$/.test(value) && Number(value) >= 1 && Number(value) <= 55;
 }
 
-// Returns { value, details }. details is empty when the input is valid.
-// value is the normalized company (trimmed, regions sorted) ready to store.
+// { value, details } を返す。正常なら details は空。value は文字列の前後の空白を除き、地域をソートした保存用の企業情報。
 function validateCompanyInput(input) {
     const body = input ?? {};
     const details = [];
@@ -71,13 +70,13 @@ function isValidGraduationYear(year) {
     return Number.isInteger(year) && year >= MIN_GRADUATION_YEAR && year <= MAX_GRADUATION_YEAR;
 }
 
-// Parses `page` (1 or more, default 1). Returns null when invalid.
+// page を1以上の整数として解釈する。未指定は1、不正な値なら null を返す。
 function parsePage(raw) {
     if (raw === undefined) return 1;
     return /^\d+$/.test(raw) && Number(raw) >= 1 ? Number(raw) : null;
 }
 
-// A real calendar date written as YYYY/MM/DD (2026/02/30 is rejected).
+// YYYY/MM/DD 形式で、実在する日付かを判定する（例：2026/02/30 は無効）。
 function isRealDate(value) {
     if (typeof value !== 'string' || !/^\d{4}\/\d{2}\/\d{2}$/.test(value)) return false;
     const [y, m, d] = value.split('/').map(Number);

@@ -1,7 +1,7 @@
-// Date helpers. API dates are YYYY/MM/DD, API date-times are ISO 8601 with +09:00 (共通仕様 §2).
-// Repositories convert DATETIME from the DB session time zone to JST before formatting.
+// APIの日付は YYYY/MM/DD、日時は +09:00 付きの ISO 8601 形式（共通仕様 §2）。
+// リポジトリ側で DATETIME をDBセッションのタイムゾーンから日本時間に変換してから整形する。
 
-// A real calendar date written as YYYY/MM/DD (2026/02/30 is rejected).
+// YYYY/MM/DD 形式で、実在する日付かを判定する（例：2026/02/30 は無効）。
 function isRealDate(value) {
     if (typeof value !== 'string' || !/^\d{4}\/\d{2}\/\d{2}$/.test(value)) return false;
     const [y, m, d] = value.split('/').map(Number);
@@ -9,13 +9,13 @@ function isRealDate(value) {
     return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
 }
 
-// 'YYYY/MM/DD' -> 'YYYY-MM-DD' (for SQL DATE).
+// YYYY/MM/DD を SQL の DATE 用に YYYY-MM-DD に変換する。
 const toDbDate = (apiDate) => apiDate.replace(/\//g, '-');
 
-// 'YYYY-MM-DD' | null -> 'YYYY/MM/DD' | null.
+// YYYY-MM-DD を YYYY/MM/DD に変換する。null はそのまま返す。
 const fromDbDate = (value) => (value ? String(value).slice(0, 10).replace(/-/g, '/') : null);
 
-// 'YYYY-MM-DD HH:MM:SS[.ffffff]' | null -> '2026-10-26T09:30:00+09:00' | null.
+// 日本時間のDB日時（マイクロ秒は任意）を +09:00 付きの日時に整形する。null はそのまま返す。
 const fromDbDateTime = (value) =>
     value ? `${String(value).slice(0, 19).replace(' ', 'T')}+09:00` : null;
 

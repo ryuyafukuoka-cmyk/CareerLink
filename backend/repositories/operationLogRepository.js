@@ -33,13 +33,17 @@ async function list(filters, page) {
         ["l.operated_at >= CONVERT_TZ(?, '+09:00', @@session.time_zone)", filters.start],
         ["l.operated_at <= CONVERT_TZ(?, '+09:00', @@session.time_zone)", filters.end],
         ['l.users_id = ?', filters.operatorId],
-        ['l.operation_type = ?', filters.operationType],
         ['l.target_table = ?', filters.table],
     ]) {
         if (value !== undefined) {
             conditions.push(clause);
             values.push(value);
         }
+    }
+    if (filters.operationType !== undefined) {
+        const { matchingOperationTypes } = await import('../common/operationLogTypes.mjs');
+        conditions.push('l.operation_type IN (?)');
+        values.push(matchingOperationTypes(filters.operationType));
     }
     const where = conditions.length ? ' WHERE ' + conditions.join(' AND ') : '';
     const [count] = await query('SELECT COUNT(*) AS total' + source + where, values);

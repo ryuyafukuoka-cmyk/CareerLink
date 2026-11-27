@@ -1,4 +1,4 @@
-// L-01 operation log list and L-02 single log. Instructors and admins only.
+// 操作履歴の一覧（L-01）と詳細（L-02）。閲覧できるのは指導員・管理者のみ。
 const express = require('express');
 const { ok, fail, requireRole } = require('../helpers');
 const { isRealDate, parsePage } = require('../validators');
@@ -13,7 +13,7 @@ function logsRoutes(store) {
     const router = express.Router();
 
     // L-01 GET /api/operation-logs?from=&to=&operatorUserId=&operationType=&targetType=&page=
-    router.get('/operation-logs', (req, res) => {
+    router.get('/operation-logs', async (req, res) => {
         requireRole(req.actor, 'instructor', 'admin');
         const { from, to, operatorUserId, operationType, targetType } = req.query;
         const page = parsePage(req.query.page);
@@ -23,13 +23,15 @@ function logsRoutes(store) {
         if (from && to && from > to) bad('to', 'E-208');
         if (targetType !== undefined && !TARGET_TYPES.includes(targetType)) bad('targetType');
 
-        // operatedAt is ISO 8601 with +09:00, so its first 10 characters are the JST date.
+        // operatedAt は +09:00 付きの ISO 8601 形式なので、先頭10文字が日本時間の日付になる。
         const dateOf = (log) => log.operatedAt.slice(0, 10).replaceAll('-', '/');
+        const { matchingOperationTypes } = await import('../../common/operationLogTypes.mjs');
+        const types = operationType && matchingOperationTypes(operationType);
         const matched = store.operationLogs
             .filter((l) => !from || dateOf(l) >= from)
             .filter((l) => !to || dateOf(l) <= to)
             .filter((l) => !operatorUserId || l.operatorUserId === operatorUserId)
-            .filter((l) => !operationType || l.operationType === operationType)
+            .filter((l) => !types || types.includes(l.operationType))
             .filter((l) => !targetType || l.targetType === targetType)
             .sort((a, b) => b.operatedAt.localeCompare(a.operatedAt));
 

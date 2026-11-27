@@ -1,5 +1,4 @@
-// Application errors. Services throw AppError; the error middleware turns it into
-// { error: { code, message, reason?, details? } } (共通仕様 §3・§4).
+// サービスが投げた AppError を、エラーミドルウェアが { error: { code, message, reason?, details? } } に変換する（共通仕様 §3・§4）。
 
 const DEFAULT_MESSAGES = Object.freeze({
     VALIDATION_ERROR: '入力内容に誤りがあります。内容を確認してください。',
@@ -22,7 +21,7 @@ const STATUS_BY_CODE = Object.freeze({
 });
 
 class AppError extends Error {
-    // options: { message?, reason?, details?, headers? }
+    // 任意の設定項目は message、reason、details、headers。
     constructor(code, options = {}) {
         super(options.message ?? DEFAULT_MESSAGES[code]);
         this.name = 'AppError';
@@ -34,7 +33,7 @@ class AppError extends Error {
     }
 }
 
-// details: [{ field, messageId }]
+// 項目ごとのエラー詳細は [{ field, messageId }] で渡す。
 const validationError = (details) => new AppError('VALIDATION_ERROR', { details });
 const unauthorized = () => new AppError('UNAUTHORIZED');
 const forbidden = (reason) => new AppError('FORBIDDEN', { reason });

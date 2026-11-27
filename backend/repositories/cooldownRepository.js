@@ -1,16 +1,14 @@
-// The 30-second limit on new registrations (RD-01 / R-01). The last success time lives on the
-// operator's users row; the DB clock is the only clock used (never Lambda memory or the client).
+// 新規登録（RD-01・R-01）の30秒制限。直前の成功時刻は操作者の users 行に保存し、経過時間はDBの時計で測る。
 const { query } = require('../db/pool');
 
-// Fixed column names (never input). Rounds and activity records have separate slots.
+// 列名には固定値を使う。応募回と活動記録の最終作成時刻は別々に保持する。
 const COLUMN_BY_KIND = Object.freeze({
     round: 'last_application_created_at',
     activityRecord: 'last_activity_created_at',
 });
 
-// Locks the operator's users row (FOR UPDATE) and returns the microseconds since the last
-// success: null when there was none yet, undefined when the user row does not exist.
-// Call inside the creation transaction, so simultaneous creations are serialized.
+// 操作者の users 行を FOR UPDATE でロックし、前回の作成成功からの経過時間をマイクロ秒で返す。
+// 初回なら null、ユーザー行がなければ undefined。作成と同じトランザクションで呼び、同時登録を順番に処理する。
 async function lockAndGetElapsedMicros(conn, userId, kind) {
     const column = COLUMN_BY_KIND[kind];
     const rows = await query(
@@ -23,8 +21,7 @@ async function lockAndGetElapsedMicros(conn, userId, kind) {
     return rows[0].elapsed === null ? null : Number(rows[0].elapsed);
 }
 
-// Records "now" as the last success. Same transaction as the creation, so a rollback keeps the
-// old time.
+// 現在のDB時刻を最終成功時刻として記録する。作成と同じトランザクションなので、ロールバック時は以前の時刻が残る。
 async function markCreated(conn, userId, kind) {
     await query(
         `UPDATE users SET ${COLUMN_BY_KIND[kind]} = NOW(6) WHERE users_id = ?`,

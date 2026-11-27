@@ -1,5 +1,5 @@
-// K-01 GET /api/companies/:companyId/karte, K-02 GET .../interview-info, K-03 GET .../exam-info.
-// query (all three): graduationYear?, activityType?
+// 企業別カルテ（K-01）、面接情報（K-02）、試験情報（K-03）は、いずれも graduationYear と activityType で絞り込める。
+// K-01 GET /api/companies/:companyId/karte、K-02 GET .../interview-info、K-03 GET .../exam-info
 const express = require('express');
 const { ok } = require('../common/response');
 const karteService = require('../services/karteService');

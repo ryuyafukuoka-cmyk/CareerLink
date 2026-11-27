@@ -1,5 +1,5 @@
-// RDS access for the record search (S-01, S-03). SQL lives here only. Only completed records
-// are ever searched. Values are always parameterized; LIKE wildcards in user input are escaped.
+// 活動記録検索（S-01・S-03）のSQLをまとめる。対象は完了済みの活動記録のみ。
+// 値はパラメーターとして渡し、入力に含まれる LIKE のワイルドカードはエスケープする。
 const { query } = require('../db/pool');
 const { ACTIVITY_TYPE_BY_ID, ACTIVITY_TYPE_ID_BY_VALUE } = require('../common/constants');
 const { fromDbDate } = require('../common/dateUtil');
@@ -16,8 +16,7 @@ function escapeLike(value) {
     return value.replace(/[\\%_]/g, '\\$&');
 }
 
-// One keyword matches when ANY searched field contains it (fields are OR):
-// question text, answer, exam content, and the impressions of interview / exam / briefing / other.
+// 質問文、回答、試験内容、各種別（面接・試験・説明会・その他）の感想のうち、いずれかに検索語があれば一致とする。
 const KEYWORD_CONDITION = `(
     EXISTS (SELECT 1 FROM activity_details ad
             JOIN interviews t ON t.activity_detail_id = ad.activity_detail_id
@@ -36,7 +35,7 @@ const KEYWORD_CONDITION = `(
             WHERE ad.activity_id = a.activity_id AND t.impressions_advice LIKE ?)
 )`;
 
-// Different conditions are ANDed; several values of one condition are ORed; keyword tokens are ANDed.
+// 異なる条件同士は AND、同じ条件の複数の値は OR、複数のキーワードは AND で組み合わせる。
 function buildWhere(f) {
     const where = ['a.record_status = 1'];
     const params = [];
@@ -71,7 +70,7 @@ function buildWhere(f) {
         );
         params.push(f.regionIds);
     }
-    // For "exact" this is only a pre-filter (a whole word is always also a substring).
+    // 完全一致（exact）でも単語は必ず部分文字列として出現するため、ここでは候補だけを絞る。
     for (const token of f.tokens) {
         where.push(KEYWORD_CONDITION);
         const p = `%${escapeLike(token)}%`;
@@ -80,7 +79,7 @@ function buildWhere(f) {
     return { clause: `WHERE ${where.join(' AND ')}`, params };
 }
 
-// All searched texts of the given records (for the word-level check of "exact" mode).
+// 完全一致モードで単語単位の照合を行うため、対象記録から検索可能なテキストをすべて取得する。
 async function loadSearchTexts(activityIds, executor) {
     if (activityIds.length === 0) return new Map();
     const JOIN = 'JOIN activity_details ad ON ad.activity_detail_id = t.activity_detail_id';
@@ -110,7 +109,7 @@ async function loadSearchTexts(activityIds, executor) {
     return byId;
 }
 
-// Rows -> RecordSearchItem[] (overview only: no excerpts, names or selection info).
+// 各行を RecordSearchItem に変換する。一覧には概要だけを含め、抜粋・氏名・選考情報は含めない。
 async function toItems(rows, executor) {
     if (rows.length === 0) return [];
     const types = await query(
@@ -137,8 +136,7 @@ async function toItems(rows, executor) {
 const ITEM_COLUMNS = `a.activity_id AS id, c.company_id AS companyId, c.company_name AS companyName,
     a.activity_date AS conductedOn, o.graduation_year AS graduationYear`;
 
-// S-01. filter comes from parseSearchQuery. One item per record; the count is per record too.
-// Returns { items, totalCount }.
+// S-01。parseSearchQuery が返した条件で検索する。結果と総件数はともに活動記録単位で、{ items, totalCount } を返す。
 async function search(filter, executor) {
     const { clause, params } = buildWhere(filter);
     const offset = (filter.page - 1) * filter.pageSize;
@@ -153,9 +151,8 @@ async function search(filter, executor) {
         return { items: await toItems(rows, executor), totalCount: Number(count[0].n) };
     }
 
-    // Exact (word) match: SQL narrows the candidates, then each keyword must equal a whole word of
-    // one searched field (each keyword may match in a different field). Small data (< 30 users),
-    // so the candidates are filtered here and paged afterwards.
+    // 完全一致ではSQLで候補を絞り、各キーワードがいずれかの項目の単語全体と一致するかを調べる。語ごとに一致する項目は異なってよい。
+    // 利用者30人未満の規模を想定し、単語の照合後にページを切り出す。
     const candidates = await query(
         `SELECT a.activity_id AS id ${FROM} ${clause} ${ORDER}`,
         params,
@@ -178,7 +175,7 @@ async function search(filter, executor) {
     return { items: await toItems(rows, executor), totalCount: matched.length };
 }
 
-// S-03. Graduation years that have completed records, newest first.
+// S-03。完了済み記録がある卒業年度を新しい順に返す。
 async function listGraduationYears(executor) {
     const rows = await query(
         `SELECT DISTINCT o.graduation_year AS year

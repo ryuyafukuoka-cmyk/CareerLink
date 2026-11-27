@@ -1,5 +1,4 @@
-// Who may see names (F-005-02 canViewPosterName). The person themself, instructors and admins
-// may; other students never see poster / editor names (the API returns null instead).
+// 投稿者・編集者の名前を表示できるのは本人、指導員、管理者。他の学生には null を返す（F-005-02 canViewPosterName）。
 const { ROLES } = require('./constants');
 
 function canViewPosterName(actor, ownerUserId) {

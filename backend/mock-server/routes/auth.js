@@ -1,4 +1,4 @@
-// A-01 login, U-01 me, U-02 first graduation year.
+// A-01 はログイン、U-01 は本人情報の取得、U-02 は初回の卒業年度登録。
 const express = require('express');
 const { ok, fail, requireRole } = require('../helpers');
 const { isValidGraduationYear } = require('../validators');
@@ -6,7 +6,7 @@ const { isValidGraduationYear } = require('../validators');
 function authRoutes() {
     const router = express.Router();
 
-    // A-01 POST /api/auth/login (the actor was already resolved from X-Mock-User)
+    // A-01 POST /api/auth/login。操作ユーザーは X-Mock-User から取得済み。
     router.post('/auth/login', (req, res) => {
         const user = req.actor;
         const isFirstLogin = user.role === 'student' && user.graduationYear === null;
@@ -18,7 +18,7 @@ function authRoutes() {
         ok(res, req.actor);
     });
 
-    // U-02 POST /api/users/me/graduation-year  body: { year }
+    // U-02 POST /api/users/me/graduation-year。本文は { year }。
     router.post('/users/me/graduation-year', (req, res) => {
         const actor = req.actor;
         requireRole(actor, 'student');

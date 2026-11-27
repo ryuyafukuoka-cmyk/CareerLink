@@ -1,5 +1,5 @@
-// Environment-based settings. Secrets (DB password etc.) come from the environment, which in AWS
-// is filled from Secrets Manager / Lambda environment settings. Never hard-code or commit them.
+// DBパスワードなどの機密情報は環境変数から読み込む。AWS では Secrets Manager または Lambda の環境設定で渡す。
+// 機密情報をコードやコミットに含めない。
 
 function readInt(name, fallback) {
     const raw = process.env[name];
@@ -14,11 +14,10 @@ const config = {
         user: process.env.DB_USER || '',
         password: process.env.DB_PASSWORD || '',
         database: process.env.DB_NAME || 'careerlink',
-        // Lambda: keep the pool small; many concurrent Lambdas share one RDS.
+        // 複数の Lambda が同じ RDS に並行して接続するため、各プールの接続数を抑える。
         connectionLimit: readInt('DB_CONNECTION_LIMIT', 2),
     },
-    // Where the AD group list and display name sit in the Cognito JWT. The real claim names are
-    // still unconfirmed (F-001 要確認3), so they are settings, not code.
+    // Cognito の JWT から AD グループ一覧と表示名を取得する。実際のクレーム名は未確認のため設定で指定する（F-001 要確認3）。
     auth: {
         groupsClaim: process.env.AD_GROUPS_CLAIM || 'custom:ad_role',
         studentGroup: process.env.AD_STUDENT_GROUP || 'student',

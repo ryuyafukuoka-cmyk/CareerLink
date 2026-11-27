@@ -1,4 +1,4 @@
-// R-01 to R-09 (activity records) and S-02 (record detail).
+// 活動記録の操作（R-01〜R-09）と詳細取得（S-02）。
 const express = require('express');
 const { ok, fail } = require('../helpers');
 const { parseId } = require('../../common/validation');
@@ -22,19 +22,19 @@ function recordsRoutes(store) {
     const isOwner = (actor, record) => actor.userId === record.ownerUserId;
     const isAdmin = (actor) => actor.role === 'admin';
 
-    // Drafts: owner and admin only. Completed records: everyone.
+    // 下書きは所有者と管理者だけが閲覧できる。完了済み記録は全利用者が閲覧できる。
     const assertCanView = (actor, record) => {
         if (record.status === 'draft' && !isOwner(actor, record) && !isAdmin(actor)) {
             fail(403, 'FORBIDDEN');
         }
     };
-    // Edit: drafts by owner/admin, completed by owner/instructor/admin.
+    // 下書きの編集は所有者・管理者、完了済み記録の編集は所有者・指導員・管理者に許可する。
     const assertCanEdit = (actor, record) => {
         if (isOwner(actor, record) || isAdmin(actor)) return;
         if (record.status === 'completed' && actor.role === 'instructor') return;
         fail(403, 'FORBIDDEN');
     };
-    // Delete: owner and admin only (never instructors).
+    // 削除は所有者・管理者のみ。指導員には許可しない。
     const assertCanDelete = (actor, record) => {
         if (!isOwner(actor, record) && !isAdmin(actor)) fail(403, 'FORBIDDEN');
     };
@@ -56,7 +56,7 @@ function recordsRoutes(store) {
         updatedAt: lastEdited(r.recordId),
         status: r.status,
     });
-    // Drafts first (updatedAt desc), then completed records (conductedOn desc).
+    // 下書きを更新日時の降順で先に並べ、続いて完了済み記録を実施日の降順で並べる。
     const summaries = (items) => {
         const drafts = items
             .filter((r) => r.status === 'draft')
@@ -69,8 +69,8 @@ function recordsRoutes(store) {
         return [...drafts, ...completed];
     };
 
-    // Shared by R-05, R-06 and R-07.
-    function saveContent(actor, record, input, mode, parseRecordContent) {
+    // R-05・R-06・R-07 の共通処理。
+    function saveContent(actor, record, input, mode, parseRecordContent, operationType) {
         checkRecordImmutableIds(record, input);
         const content = parseRecordContent(input, mode, roundOf(record)?.stage);
         Object.assign(record, content);
@@ -79,13 +79,13 @@ function recordsRoutes(store) {
         store.touchCompany(record.companyId);
         store.addLog({
             operatorUserId: actor.userId,
-            operationType: 'updateRecord',
+            operationType,
             targetType: 'record',
             targetId: record.recordId,
         });
     }
 
-    // R-01 POST /api/activity-records  body: ActivityRecordInput + mode
+    // R-01 POST /api/activity-records。本文は ActivityRecordInput と mode。
     router.post('/activity-records', async (req, res) => {
         const parseRecordContent = await loadRecordContentParser();
         const actor = req.actor;
@@ -96,7 +96,7 @@ function recordsRoutes(store) {
 
         if (actor.role === 'instructor') fail(403, 'FORBIDDEN');
 
-        // Owner: students only themselves; admins must name an existing student.
+        // 学生は自分の記録のみ作成できる。管理者の代理登録では、実在する学生を所有者に指定する。
         let ownerUserId = actor.userId;
         if (actor.role === 'student') {
             if (body.ownerUserId !== undefined && body.ownerUserId !== actor.userId) {
@@ -123,7 +123,7 @@ function recordsRoutes(store) {
 
         const content = parseRecordContent(body, body.mode, round.stage);
 
-        store.assertCooldown(actor.userId, 'record'); // 429, separate from rounds
+        store.assertCooldown(actor.userId, 'record'); // 応募回とは別に作成間隔を制限する（429）。
 
         const record = {
             recordId: store.nextId(store.records, 'recordId'),
@@ -141,7 +141,7 @@ function recordsRoutes(store) {
         store.markCreated(actor.userId, 'record');
         store.addLog({
             operatorUserId: actor.userId,
-            operationType: 'createRecord',
+            operationType: 'createActivityRecord',
             targetType: 'record',
             targetId: record.recordId,
         });
@@ -181,7 +181,7 @@ function recordsRoutes(store) {
         const record = findOr404(req.params.id);
         assertCanEdit(req.actor, record);
         if (record.status !== 'draft') fail(409, 'CONFLICT');
-        saveContent(req.actor, record, req.body ?? {}, 'draft', parseRecordContent);
+        saveContent(req.actor, record, req.body ?? {}, 'draft', parseRecordContent, 'saveDraft');
         ok(res, record);
     });
 
@@ -191,18 +191,32 @@ function recordsRoutes(store) {
         const record = findOr404(req.params.id);
         assertCanEdit(req.actor, record);
         if (record.status !== 'draft') fail(409, 'CONFLICT');
-        saveContent(req.actor, record, req.body ?? {}, 'complete', parseRecordContent);
+        saveContent(
+            req.actor,
+            record,
+            req.body ?? {},
+            'complete',
+            parseRecordContent,
+            'completeActivityRecord',
+        );
         record.status = 'completed';
         ok(res, record);
     });
 
-    // R-07 PUT /api/activity-records/:id (completed records only; the status never changes)
+    // R-07 PUT /api/activity-records/:id。完了済み記録だけを更新し、記録状態は維持する。
     router.put('/activity-records/:id', async (req, res) => {
         const parseRecordContent = await loadRecordContentParser();
         const record = findOr404(req.params.id);
         assertCanEdit(req.actor, record);
         if (record.status !== 'completed') fail(409, 'CONFLICT');
-        saveContent(req.actor, record, req.body ?? {}, 'complete', parseRecordContent);
+        saveContent(
+            req.actor,
+            record,
+            req.body ?? {},
+            'complete',
+            parseRecordContent,
+            'updateActivityRecord',
+        );
         ok(res, record);
     });
 
@@ -214,7 +228,7 @@ function recordsRoutes(store) {
         ok(res, { recordId, companyName, activityTypes, conductedOn });
     });
 
-    // R-09 DELETE /api/activity-records/:id (physical delete; company, users and the round stay)
+    // R-09 DELETE /api/activity-records/:id。記録を物理削除し、企業・ユーザー・応募回は残す。
     router.delete('/activity-records/:id', (req, res) => {
         const actor = req.actor;
         const record = findOr404(req.params.id);
@@ -224,14 +238,14 @@ function recordsRoutes(store) {
         store.touchCompany(record.companyId);
         store.addLog({
             operatorUserId: actor.userId,
-            operationType: 'deleteRecord',
+            operationType: 'deleteActivityRecord',
             targetType: 'record',
             targetId: record.recordId,
         });
         ok(res, null);
     });
 
-    // S-02 GET /api/activity-records/:id. Names are null unless the viewer is the owner, an instructor or an admin.
+    // S-02 GET /api/activity-records/:id。所有者・指導員・管理者以外には氏名を null で返す。
     router.get('/activity-records/:id', (req, res) => {
         const actor = req.actor;
         const record = findOr404(req.params.id);
@@ -243,7 +257,7 @@ function recordsRoutes(store) {
         const edits = history(record.recordId).sort((a, b) => a.editedAt.localeCompare(b.editedAt));
         const company = store.getCompany(record.companyId);
 
-        // status and ownerUserId are extra fields (not in the API spec yet): the screen needs them for buttons and labels.
+        // status と ownerUserId はボタンの表示やラベルの切り替えに使う追加項目（API設計書には未記載）。
         ok(res, {
             recordId: record.recordId,
             status: record.status,

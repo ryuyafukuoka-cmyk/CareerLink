@@ -1,10 +1,10 @@
-// LOCAL DEVELOPMENT ONLY. Used by server.js, never by lambda.js (詳細設計 要確認3: 開発用モック認証を
-// 本番へ持ち込まない). It refuses to run when NODE_ENV=production.
+// server.js が使うローカル開発専用の認証。Lambda には組み込まない（詳細設計の要確認3）。
+// NODE_ENV=production で呼び出すとエラーにする。
 //
-// Fake claims come from request headers (no real JWT is checked):
-//   X-Dev-Sub     required  stands for the Cognito `sub` (one value = one person)
-//   X-Dev-Groups  optional  AD group list, e.g. "student" or "instructor" (used on first login only)
-//   X-Dev-Name    optional  display name (used on first login only)
+// JWT の検証を省き、次のリクエストヘッダーから開発用のクレームを作る。
+//   X-Dev-Sub     必須。Cognito の sub に相当する、ユーザーごとに固有の識別子。
+//   X-Dev-Groups  任意。初回ログイン時の権限判定に使う AD グループ（例：student、instructor）。
+//   X-Dev-Name    任意。初回ログイン時に登録する表示名。
 const { unauthorized } = require('../common/errors');
 const { parseGroups } = require('./claims');
 

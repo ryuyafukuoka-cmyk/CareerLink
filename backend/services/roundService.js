@@ -1,4 +1,4 @@
-// Application round services (F-004-04). RD-01 to RD-06.
+// 応募回のサービス（F-004-04）。RD-01〜RD-06 に対応する。
 const { ROLES, STAGES, STAGE_VALUES, STAGE_ID_BY_VALUE } = require('../common/constants');
 const { forbidden, notFound, validationError } = require('../common/errors');
 const { isRealDate, toDbDate } = require('../common/dateUtil');
@@ -16,8 +16,8 @@ const MAX_NOTE_LENGTH = 10000;
 const isOwnerStudent = (actor, round) =>
     actor.role === ROLES.STUDENT && round.studentUserId === actor.userId;
 
-// Loads a round the actor may VIEW: its student, instructors, admins.
-// A student never learns whether somebody else's round exists: missing and foreign are both 403.
+// 学生本人・指導員・管理者が閲覧できる応募回を取得する。
+// 学生には存在しない応募回と他人の応募回のどちらも403を返し、他人の応募回の有無を推測できないようにする。
 async function loadForView(actor, param) {
     const id = parseId(param);
     if (id === null) throw notFound();
@@ -35,10 +35,9 @@ async function logRoundFailure(entry) {
     }
 }
 
-// RD-01 createApplicationRound: a student for themself, an admin for any student, never an
-// instructor. Order: body (400) -> role/owner (403) -> student (404) -> company lock (404) ->
-// 30-second limit (429) -> insert. The stage starts at "considering"; nothing is inferred from
-// the date.
+// RD-01 createApplicationRound。学生は自分の応募回、管理者は任意の学生の応募回を作成できる。指導員は作成不可。
+// 本文（400）、権限・所有者（403）、学生の存在（404）、企業ロック（404）、30秒制限（429）の順に確認して登録する。
+// 初期段階は応募日にかかわらず considering。
 async function createApplicationRound(actor, body) {
     const entry = {
         operatorUserId: actor.userId,
@@ -74,7 +73,7 @@ async function insertApplicationRound(actor, body, entry) {
     if (!student || student.role !== ROLES.STUDENT) throw notFound();
 
     return withTransaction(async (conn) => {
-        // Lock order (DB設計): company row, then the operator's users row.
+        // ロック順は企業行、次に操作者の users 行（DB設計）。
         if (!(await companyRepository.lockById(conn, companyId))) throw notFound();
         await assertCreationCooldown(conn, actor, 'round');
 
@@ -91,7 +90,7 @@ async function insertApplicationRound(actor, body, entry) {
     });
 }
 
-// RD-02 listApplicationRounds: a student only their own; instructors / admins anyone's.
+// RD-02 listApplicationRounds。学生は自分の応募回のみ、指導員と管理者は任意の学生の応募回を取得できる。
 async function listApplicationRounds(actor, query = {}) {
     const details = [];
     const single = (v) => (v === undefined || typeof v === 'string' ? v : null);
@@ -118,14 +117,13 @@ async function listApplicationRounds(actor, query = {}) {
     return roundRepository.list(filter);
 }
 
-// RD-03 getApplicationRound
+// RD-03。応募回の詳細を取得する。
 async function getApplicationRound(actor, param) {
     return loadForView(actor, param);
 }
 
-// RD-04 updateApplicationRound: the student of the round and admins only (instructors view only).
-// Rules: the date may be empty only at "considering" (nothing is filled in automatically);
-// leaving "considering" needs a category on every interview question of the round.
+// RD-04 updateApplicationRound。更新できるのは学生本人と管理者。指導員は閲覧のみ。
+// 応募日を空欄にできるのは considering の間だけで、自動補完はしない。そこから別の段階に進めるには、応募回の面接質問すべてにカテゴリが必要。
 async function updateApplicationRound(actor, param, body) {
     const id = parseId(param);
     const entry = {
@@ -175,7 +173,7 @@ async function updateExistingRound(actor, id, body, entry) {
     if (details.length > 0) throw validationError(details);
 
     return withTransaction(async (conn) => {
-        // Lock order: company row, then the round row; merge with the freshly locked values.
+        // 企業行、応募回の行の順にロックし、ロック取得後に読み直した値と入力を組み合わせる。
         if (!(await companyRepository.lockById(conn, Number(first.companyId)))) throw notFound();
         const round = await roundRepository.findById(id, conn, { forUpdate: true });
         if (!round) throw notFound();
@@ -208,15 +206,14 @@ async function updateExistingRound(actor, id, body, entry) {
     });
 }
 
-// RD-05 listRoundRecords: drafts only for the round's student and admins.
+// RD-05 listRoundRecords。応募回の下書きを取得できるのは学生本人と管理者のみ。
 async function listRoundRecords(actor, param) {
     const round = await loadForView(actor, param);
     const canSeeDrafts = actor.role === ROLES.ADMIN || isOwnerStudent(actor, round);
     return roundRepository.listRecords(Number(round.applicationRoundId), canSeeDrafts);
 }
 
-// RD-06 listRoundHistory: editor and time only. Viewers are already limited to the round's
-// student, instructors and admins, so editor names may be shown.
+// RD-06 listRoundHistory。履歴には編集者と日時だけを含める。閲覧者は学生本人・指導員・管理者に限られるため、編集者名を表示できる。
 async function listRoundHistory(actor, param) {
     const round = await loadForView(actor, param);
     return roundRepository.listHistory(Number(round.applicationRoundId));
